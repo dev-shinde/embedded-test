@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MathWorks Forge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+<style>
+  :root{
+    --ink:#0a0d14; --ink2:#0f131d; --panel:#141926; --panel2:#1a2030;
+    --line:#222b3d; --line2:#2c374d;
+    --text:#e7eaf2; --mut:#8b93a8; --dim:#5b6479;
+    --cyan:#22d3ee; --violet:#a78bfa; --amber:#fbbf24;
+    --ok:#34d399; --bad:#f87171; --warn:#fbbf24;
+    --r:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 88% -10%, rgba(167,139,250,.10), transparent 60%),
+      radial-gradient(900px 500px at -5% 110%, rgba(34,211,238,.08), transparent 55%),
+      var(--ink);
+    color:var(--text); font-family:'Space Grotesk',system-ui,sans-serif; font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  code,kbd,.mono,.CodeMirror,pre{font-family:'JetBrains Mono',ui-monospace,monospace}
+  a{color:var(--cyan);text-decoration:none}
+  button{font-family:inherit;cursor:pointer}
+
+  .app{display:grid;grid-template-columns:230px 1fr;height:100vh}
+  /* sidebar */
+  .side{border-right:1px solid var(--line);background:linear-gradient(180deg,var(--ink2),var(--ink));padding:18px 14px;display:flex;flex-direction:column;gap:4px;overflow:auto}
+  .brand{display:flex;align-items:center;gap:10px;margin:2px 4px 18px}
+  .brand .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--cyan),var(--violet));box-shadow:0 0 18px rgba(34,211,238,.35)}
+  .brand b{font-weight:700;letter-spacing:.3px}
+  .brand small{display:block;color:var(--dim);font-size:10px;font-family:'JetBrains Mono';letter-spacing:1px;text-transform:uppercase}
+  .nav{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;color:var(--mut);font-weight:500;border:1px solid transparent}
+  .nav:hover{background:var(--panel);color:var(--text)}
+  .nav.active{background:var(--panel2);color:var(--text);border-color:var(--line2)}
+  .nav .ic{width:16px;text-align:center;color:var(--cyan)}
+  .nav.active .ic{color:var(--violet)}
+  .sidefoot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:7px}
+  .mini{font-size:11px;color:var(--dim);font-family:'JetBrains Mono'}
+
+  .main{overflow:auto;padding:26px 30px 60px}
+  .view{display:none;max-width:1080px;margin:0 auto}
+  .view.show{display:block}
+  h1{font-size:22px;font-weight:700;margin:0 0 2px;letter-spacing:.2px}
+  h2{font-size:15px;font-weight:600;margin:26px 0 12px;color:var(--text)}
+  .sub{color:var(--mut);margin:0 0 22px;font-size:13px}
+  .eyebrow{font-family:'JetBrains Mono';font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);margin-bottom:8px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .grid{display:grid;gap:12px}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:9px;border:1px solid var(--line2);background:var(--panel2);color:var(--text);font-weight:600;font-size:13px;transition:.12s}
+  .btn:hover{border-color:var(--cyan);box-shadow:0 0 0 1px rgba(34,211,238,.2)}
+  .btn.cyan{background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(34,211,238,.06));border-color:rgba(34,211,238,.5);color:#bff3fb}
+  .btn.violet{background:linear-gradient(135deg,rgba(167,139,250,.16),rgba(167,139,250,.06));border-color:rgba(167,139,250,.5);color:#e2d8ff}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:6px 11px;font-size:12px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  .tag{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono';font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line2);color:var(--mut);background:var(--ink2)}
+  .tag.cy{color:var(--cyan);border-color:rgba(34,211,238,.4)}
+  .tag.vi{color:var(--violet);border-color:rgba(167,139,250,.4)}
+  .tag.am{color:var(--amber);border-color:rgba(251,191,36,.4)}
+  .tag.bad{color:var(--bad);border-color:rgba(248,113,113,.4)}
+  .tag.ok{color:var(--ok);border-color:rgba(52,211,153,.4)}
+
+  /* problem list */
+  .plist{display:grid;gap:8px}
+  .pitem{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:var(--panel);transition:.12s}
+  .pitem:hover{border-color:var(--line2);transform:translateX(2px)}
+  .pitem .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--dim)}
+  .pitem .dot.done{background:var(--ok);box-shadow:0 0 8px rgba(52,211,153,.5)}
+  .pitem .pt{flex:1;min-width:0}
+  .pitem .pt b{font-weight:600}
+  .pitem .pt .meta{color:var(--dim);font-size:11px;font-family:'JetBrains Mono';margin-top:2px}
+  .diff{font-family:'JetBrains Mono';font-size:11px;padding:2px 7px;border-radius:5px}
+  .diff.easy{color:var(--ok);background:rgba(52,211,153,.1)}
+  .diff.med{color:var(--amber);background:rgba(251,191,36,.1)}
+  .diff.hard{color:var(--bad);background:rgba(248,113,113,.1)}
+  .kind{font-family:'JetBrains Mono';font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--violet)}
+
+  /* problem workspace */
+  .work{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:18px;align-items:start}
+  .pane{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .pane .hd{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .pane .bd{padding:16px;max-height:72vh;overflow:auto}
+  .desc h3{margin:0 0 4px;font-size:16px}
+  .desc p{color:var(--text);line-height:1.6;margin:10px 0}
+  .desc .ex{background:var(--ink2);border:1px solid var(--line);border-radius:8px;padding:11px 13px;margin:10px 0;font-family:'JetBrains Mono';font-size:12.5px;line-height:1.7}
+  .desc .ex .k{color:var(--cyan)}
+  .desc ul{margin:8px 0;padding-left:18px}
+  .desc li{margin:4px 0;color:var(--mut)}
+  .constraints code{color:var(--amber)}
+
+  .CodeMirror{height:48vh;border-radius:0;font-size:13px;background:#0b0f18!important}
+  .cm-s-default .cm-keyword{color:var(--violet)}
+  .cm-s-default .cm-variable{color:#cdd3e0}
+  .cm-s-default .cm-def{color:var(--cyan)}
+  .cm-s-default .cm-type{color:var(--cyan)}
+  .cm-s-default .cm-string{color:#7fd8a0}
+  .cm-s-default .cm-number{color:var(--amber)}
+  .cm-s-default .cm-comment{color:#566080;font-style:italic}
+  .cm-s-default .cm-operator{color:#9fb0cc}
+  .cm-s-default .cm-bracket{color:#9fb0cc}
+  .cm-s-default .CodeMirror-gutters{background:#0b0f18;border-right:1px solid var(--line)}
+  .cm-s-default .CodeMirror-linenumber{color:#3c455c}
+  .CodeMirror-cursor{border-left:1px solid var(--cyan)!important}
+
+  .actions{display:flex;gap:10px;padding:13px 16px;border-top:1px solid var(--line);background:var(--ink2)}
+
+  /* options (concept) */
+  .opts{display:grid;gap:9px;margin-top:6px}
+  .opt{display:flex;gap:11px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--ink2);cursor:pointer;transition:.12s}
+  .opt:hover{border-color:var(--line2)}
+  .opt.sel{border-color:var(--cyan);background:rgba(34,211,238,.07)}
+  .opt.correct{border-color:var(--ok);background:rgba(52,211,153,.08)}
+  .opt.wrong{border-color:var(--bad);background:rgba(248,113,113,.08)}
+  .opt .letter{font-family:'JetBrains Mono';color:var(--violet);font-weight:700;flex:none}
+  .opt .txt{line-height:1.5}
+
+  /* results */
+  .results{margin-top:14px}
+  .tgrid{display:grid;gap:7px}
+  .tcase{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--ink2);font-family:'JetBrains Mono';font-size:12px}
+  .tcase .st{font-weight:700}
+  .tcase.pass{border-color:rgba(52,211,153,.35)} .tcase.pass .st{color:var(--ok)}
+  .tcase.fail{border-color:rgba(248,113,113,.35)} .tcase.fail .st{color:var(--bad)}
+  .tcase .ln{margin:2px 0;color:var(--mut)} .tcase .ln b{color:var(--text)}
+  .tcase .got.bad b{color:var(--bad)}
+
+  .verdict{padding:14px 16px;border-radius:9px;border:1px solid var(--line2);margin-top:14px;background:var(--ink2)}
+  .verdict .vt{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+  .verdict.good{border-color:rgba(52,211,153,.4)} .verdict.good .vt{color:var(--ok)}
+  .verdict.partial{border-color:rgba(251,191,36,.4)} .verdict.partial .vt{color:var(--amber)}
+  .verdict.bad{border-color:rgba(248,113,113,.4)} .verdict.bad .vt{color:var(--bad)}
+  .verdict .hint{margin-top:9px;color:var(--text);line-height:1.6}
+  .verdict .tags{margin-top:11px;display:flex;gap:7px;flex-wrap:wrap}
+
+  /* playbook reveal */
+  .playbook{margin-top:14px;border:1px dashed var(--line2);border-radius:9px;overflow:hidden}
+  .playbook .ph{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:var(--mut);font-family:'JetBrains Mono';font-size:12px;letter-spacing:1px;text-transform:uppercase}
+  .playbook .pb{display:none;padding:0 14px 14px;border-top:1px solid var(--line)}
+  .playbook.open .pb{display:block}
+  .playbook h4{margin:14px 0 5px;font-size:12px;color:var(--cyan);font-family:'JetBrains Mono';letter-spacing:1px;text-transform:uppercase}
+  .playbook p,.playbook li{color:var(--mut);line-height:1.6;font-size:13px}
+
+  /* weak points */
+  .levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .lvl{padding:14px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+  .lvl .lh{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+  .lvl .lh b{font-size:13px}
+  .bar{height:7px;border-radius:4px;background:var(--ink2);overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--cyan),var(--violet))}
+  .lvlname{font-family:'JetBrains Mono';font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line2)}
+  .lvl .slips{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+  .lvl .empty{color:var(--dim);font-size:12px;margin-top:8px}
+
+  table.wk{width:100%;border-collapse:collapse;margin-top:8px}
+  table.wk th,table.wk td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);font-size:13px}
+  table.wk th{color:var(--dim);font-family:'JetBrains Mono';font-size:11px;text-transform:uppercase;letter-spacing:1px}
+  table.wk td.n{font-family:'JetBrains Mono';color:var(--amber);text-align:right}
+
+  /* trends */
+  .spark{width:100%;height:120px}
+  .trendrow{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px}
+  .arrow{font-family:'JetBrains Mono';font-weight:700}
+  .arrow.up{color:var(--bad)} .arrow.down{color:var(--ok)} .arrow.flat{color:var(--mut)}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--line2);padding:11px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:50;font-size:13px}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer}
+  .switch .tk{width:38px;height:21px;border-radius:11px;background:var(--ink2);border:1px solid var(--line2);position:relative;transition:.15s}
+  .switch .tk:after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--mut);transition:.15s}
+  .switch.on .tk{background:rgba(34,211,238,.25);border-color:var(--cyan)}
+  .switch.on .tk:after{left:19px;background:var(--cyan)}
+
+  .spinner{width:14px;height:14px;border:2px solid var(--line2);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .muted{color:var(--mut)} .small{font-size:12px}
+  hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  @media (max-width:880px){.app{grid-template-columns:1fr}.side{display:none}.work{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="mark"></div>
+      <div><b>MathWorks Forge</b><small>EDG · embedded + sde</small></div>
+    </div>
+    <a class="nav active" data-view="today"><span class="ic">◎</span> Today</a>
+    <a class="nav" data-view="bank"><span class="ic">▤</span> Problem bank</a>
+    <a class="nav" data-view="weak"><span class="ic">◭</span> Weak points</a>
+    <a class="nav" data-view="trends"><span class="ic">◠</span> Trends</a>
+    <a class="nav" data-view="settings"><span class="ic">⚙</span> Settings</a>
+    <button class="btn violet sm" id="drillBtn" style="margin-top:14px">⌖ Drill my weak spots</button>
+    <div class="sidefoot">
+      <div class="mini" id="streakInfo">Day 1 of 12</div>
+      <div class="mini" id="solvedInfo">0 solved</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- TODAY -->
+    <section class="view show" id="view-today">
+      <div class="eyebrow">Adaptive curriculum</div>
+      <h1 id="dayTitle">Today</h1>
+      <p class="sub" id="dayFocus"></p>
+      <div class="row" style="margin-bottom:18px">
+        <button class="btn ghost sm" id="prevDay">‹ Prev day</button>
+        <button class="btn ghost sm" id="nextDay">Next day ›</button>
+        <span class="tag am" id="paceTag" style="align-self:center"></span>
+      </div>
+      <h2>Today's problems</h2>
+      <div class="plist" id="todayList"></div>
+      <h2>Woven revision</h2>
+      <div class="plist" id="reviseList"></div>
+    </section>
+
+    <!-- BANK -->
+    <section class="view" id="view-bank">
+      <div class="eyebrow">Full bank</div>
+      <h1>Problem bank</h1>
+      <p class="sub">All problems across embedded C, RTOS, OS, DSA, aptitude, MATLAB. Filter by topic.</p>
+      <div class="row" id="bankFilters" style="margin-bottom:16px"></div>
+      <div class="plist" id="bankList"></div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section class="view" id="view-problem">
+      <button class="btn ghost sm" id="backBtn" style="margin-bottom:16px">‹ Back</button>
+      <div class="work">
+        <div class="pane">
+          <div class="hd">
+            <div class="row" style="gap:8px"><span class="diff" id="pDiff"></span><span class="kind" id="pKind"></span></div>
+            <span class="tag" id="pTopic"></span>
+          </div>
+          <div class="bd desc" id="pDesc"></div>
+        </div>
+        <div class="pane" id="solverPane">
+          <div class="hd">
+            <span class="mono small muted" id="pSig">Solution</span>
+            <button class="btn ghost sm" id="resetCode">Reset</button>
+          </div>
+          <div id="editorWrap"></div>
+          <div id="conceptWrap" style="display:none" class="bd"><div class="opts" id="optList"></div></div>
+          <div class="actions">
+            <button class="btn cyan" id="runBtn">▶ Run</button>
+            <button class="btn violet" id="evalBtn">⌕ Evaluate</button>
+            <span class="muted small" id="runNote" style="align-self:center;margin-left:auto"></span>
+          </div>
+          <div class="bd" style="border-top:1px solid var(--line);padding-top:14px">
+            <div id="resultArea"></div>
+            <div class="playbook" id="playbook">
+              <div class="ph" id="pbToggle"><span>▸ Playbook — intuition · template · slips</span><span>reveal</span></div>
+              <div class="pb" id="pbBody"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WEAK -->
+    <section class="view" id="view-weak">
+      <div class="eyebrow">Diagnosis</div>
+      <h1>Weak points</h1>
+      <p class="sub">Per-topic proficiency from score + slip frequency. Seeded with your documented baseline slips.</p>
+      <h2>Top weaknesses</h2>
+      <table class="wk" id="topWeak"></table>
+      <h2>Proficiency by topic</h2>
+      <div class="levels" id="levelGrid"></div>
+    </section>
+
+    <!-- TRENDS -->
+    <section class="view" id="view-trends">
+      <div class="eyebrow">Over time</div>
+      <h1>Trends</h1>
+      <p class="sub">Correctness across your evaluation log, and per-category slip rate (early vs recent).</p>
+      <div class="card"><div class="muted small mono" style="margin-bottom:8px">Score per evaluation →</div><svg class="spark" id="spark" viewBox="0 0 600 120" preserveAspectRatio="none"></svg></div>
+      <h2>Slip rate by category</h2>
+      <div class="card" id="slipTrends"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings">
+      <div class="eyebrow">Config</div>
+      <h1>Settings</h1>
+      <p class="sub">The judge defaults to the <code class="mono">/api/judge</code> proxy silently. No keys live in the browser.</p>
+      <div class="card grid" style="gap:16px;max-width:620px">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div><b>Real compilation (Judge0)</b><div class="muted small">Routes ▶ Run through <code class="mono">/api/run</code> → g++. Off = model-traced run.</div></div>
+          <div class="switch" id="judge0Switch"><span class="tk"></span></div>
+        </div>
+        <hr/>
+        <div>
+          <b>Backup</b><div class="muted small" style="margin-bottom:10px">Your weakness profile lives in localStorage. Export before redeploying.</div>
+          <div class="row">
+            <button class="btn sm" id="exportBtn">⭳ Export JSON</button>
+            <button class="btn sm" id="importBtn">⭱ Import JSON</button>
+            <button class="btn ghost sm" id="resetProfile" style="color:var(--bad)">Reset profile</button>
+            <input type="file" id="importFile" accept="application/json" style="display:none"/>
+          </div>
+        </div>
+        <hr/>
+        <div class="muted small mono" id="diag"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script id="app">
+/* ============================== STORAGE ============================== */
+const store = (() => {
+  let mem = {};
+  let ok = false;
+  try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); ok = true; } catch(e){ ok = false; }
+  return {
+    get: k => { try { return ok ? localStorage.getItem(k) : (mem[k]??null); } catch(e){ return mem[k]??null; } },
+    set: (k,v) => { try { ok ? localStorage.setItem(k,v) : (mem[k]=v); } catch(e){ mem[k]=v; } }
+  };
+})();
+const PKEY = 'mwforge_profile_v1';
+const SKEY = 'mwforge_settings_v1';
+
+/* ============================== VOCAB ============================== */
+const TOPICS = [
+  { id:'ec-mem',  name:'Embedded C · Memory & Pointers', cat:'Embedded C' },
+  { id:'ec-qual', name:'Embedded C · Qualifiers & Types', cat:'Embedded C' },
+  { id:'ec-bits', name:'Embedded C · Bits, Structs, Endianness', cat:'Embedded C' },
+  { id:'ec-fptr', name:'Embedded C · Function Pointers & UB', cat:'Embedded C' },
+  { id:'rtos-sched', name:'RTOS · Tasks & Scheduling', cat:'RTOS' },
+  { id:'rtos-sync',  name:'RTOS · Sync, ISRs, Priority Inversion', cat:'RTOS' },
+  { id:'os-proc', name:'OS · Processes, Threads, Scheduling', cat:'OS' },
+  { id:'os-mem',  name:'OS · Memory, Paging, Deadlock', cat:'OS' },
+  { id:'dsa-linear', name:'DSA · Linear, Stack, Hashing', cat:'DSA' },
+  { id:'dsa-tg', name:'DSA · Trees & Graphs', cat:'DSA' },
+  { id:'dsa-adv', name:'DSA · DP, Heap, Greedy, Search', cat:'DSA' },
+  { id:'apt', name:'Aptitude & Quant', cat:'Aptitude' },
+  { id:'matlab', name:'MATLAB / Simulink Awareness', cat:'MATLAB' },
+  { id:'linux', name:'Linux / Shell Commands', cat:'Linux' }
+];
+const TOPIC = Object.fromEntries(TOPICS.map(t => [t.id, t]));
+const TAGS = ['syntax:nullptr','syntax:top-pop','syntax:iter-deref','syntax:map-access',
+  'logic:off-by-one','logic:overflow','logic:wrong-approach','logic:incomplete',
+  'edge:bounds','edge:empty','edge:null','complexity:too-slow','concept:misunderstood'];
+
+const CURRICULUM = [
+  { day:1,  focus:'ec-mem',  revise:[],                title:'Memory & pointers, stack vs heap' },
+  { day:2,  focus:'ec-qual', revise:['ec-mem'],        title:'const / volatile, fixed-width, UB' },
+  { day:3,  focus:'ec-bits', revise:['ec-mem'],        title:'Bits, endianness, structs/unions/bitfields' },
+  { day:4,  focus:'ec-fptr', revise:['ec-qual','ec-bits'], title:'Function pointers + DSA linear warm-up' },
+  { day:5,  focus:'rtos-sched', revise:['ec-mem'],     title:'Tasks, priorities, scheduling, context switch' },
+  { day:6,  focus:'rtos-sync',  revise:['ec-bits','rtos-sched'], title:'Semaphores, mutexes, queues, ISRs, inversion' },
+  { day:7,  focus:'os-proc', revise:['rtos-sched','linux'], title:'Processes/threads, scheduling + Linux basics' },
+  { day:8,  focus:'os-mem',  revise:['rtos-sync','os-proc','linux'], title:'Synchronization, deadlock, paging + shell' },
+  { day:9,  focus:'dsa-linear', revise:['ec-mem'],     title:'Stack, linked list, hashing' },
+  { day:10, focus:'dsa-tg',  revise:['dsa-linear'],    title:'Trees, graphs, BFS/DFS' },
+  { day:11, focus:'dsa-adv', revise:['dsa-tg'],        title:'DP, heap, greedy, binary search, backtracking' },
+  { day:12, focus:'apt',     revise:['matlab','dsa-adv','linux'], title:'Mixed mock: aptitude + MATLAB + Linux + weakest revision' }
+];
+
+/* ============================== PROBLEMS ============================== */
+/* code starters use \n. concept problems carry options/answer/explain. */
+const PROBLEMS = [
+  /* ---------- Embedded C: memory ---------- */
+  { id:'ecmem1', topic:'ec-mem', kind:'concept', diff:'easy',
+    title:'Dangling pointer after free',
+    statement:'Reason about lifetime and undefined behavior in C.',
+    prompt:'After <code class="mono">free(p)</code> executes successfully, what is the status of reading <code class="mono">*p</code> later in the same function (p not reassigned)?',
+    options:[
+      'Defined — it returns the last value stored before free',
+      'Defined — it returns 0',
+      'Undefined behavior — p is now a dangling pointer (use-after-free)',
+      'A compile error'
+    ], answer:2,
+    explain:'free() ends the lifetime of the object. p still holds the old address but the storage may be reused; dereferencing it is use-after-free — undefined behavior. Set p = nullptr after free to make misuse detectable.',
+    playbook:{ intuition:'free() does not change p; it invalidates what p points to. The pointer is a separate object from the thing it addresses.',
+      template:'free(p); p = nullptr;  // guard against use-after-free',
+      slips:'Confusing "the pointer" with "the pointee". Forgetting to null out after free.' } },
+
+  { id:'ecmem2', topic:'ec-mem', kind:'code', diff:'easy',
+    title:'Reverse String (in place)',
+    statement:'Two-pointer in-place reversal. Tests pointer/index discipline and bounds.',
+    prompt:'Write a function that reverses a vector of characters <b>in place</b>, using O(1) extra memory.',
+    sig:'void reverseString(vector<char>& s)',
+    starter:'class Solution {\npublic:\n    void reverseString(vector<char>& s) {\n        // two pointers, swap inward\n        \n    }\n};',
+    examples:[
+      { in:'s = ["h","e","l","l","o"]', out:'["o","l","l","e","h"]', ex:'Swap ends moving inward.' },
+      { in:'s = ["H","a","n","n","a","h"]', out:'["h","a","n","n","a","H"]', ex:'Even length.' }
+    ],
+    constraints:['1 ≤ s.length ≤ 1e5','s[i] is a printable ASCII char'],
+    tests:[
+      { in:'s=["h","e","l","l","o"]', out:'["o","l","l","e","h"]' },
+      { in:'s=["H","a","n","n","a","h"]', out:'["h","a","n","n","a","H"]' },
+      { in:'s=["a"]', out:'["a"]' },
+      { in:'s=["a","b"]', out:'["b","a"]' }
+    ],
+    playbook:{ intuition:'Mirror swap: leftmost with rightmost, march toward the center. Stop when pointers meet.',
+      template:'int i=0, j=s.size()-1;\nwhile(i<j) swap(s[i++], s[j--]);',
+      slips:'Off-by-one in the loop bound (use i<j, not i<=j). Empty vector → loop simply does not run.' } },
+
+  /* ---------- Embedded C: qualifiers ---------- */
+  { id:'ecqual1', topic:'ec-qual', kind:'concept', diff:'med',
+    title:'What volatile guarantees',
+    statement:'Compiler memory model for memory-mapped I/O.',
+    prompt:'A status register is read in a polling loop. Marking the pointer <code class="mono">volatile</code> tells the compiler to:',
+    options:[
+      'Make every access atomic and thread-safe',
+      'Re-read the value from memory on every access and not optimize the access away',
+      'Place the variable in read-only flash',
+      'Guarantee ordering across multiple cores'
+    ], answer:1,
+    explain:'volatile forbids the compiler from caching the value in a register or eliding "redundant" reads/writes — essential for memory-mapped registers and ISR-shared flags. It does NOT provide atomicity or cross-core ordering (that needs atomics/barriers).',
+    playbook:{ intuition:'volatile = "this can change behind your back, always go look at the real memory."',
+      template:'volatile uint32_t* const STATUS = (uint32_t*)0x40000000;\nwhile(!(*STATUS & READY_BIT)) { }',
+      slips:'Assuming volatile gives atomicity or thread-safety. It does not.' } },
+
+  /* ---------- Embedded C: bits ---------- */
+  { id:'ecbits1', topic:'ec-bits', kind:'code', diff:'easy',
+    title:'Number of 1 Bits',
+    statement:'Population count. Brian Kernighan trick or builtin.',
+    prompt:'Return the number of set bits in the 32-bit unsigned integer n (its Hamming weight).',
+    sig:'int hammingWeight(uint32_t n)',
+    starter:'class Solution {\npublic:\n    int hammingWeight(uint32_t n) {\n        \n    }\n};',
+    examples:[
+      { in:'n = 11  (0b1011)', out:'3', ex:'Three set bits.' },
+      { in:'n = 128 (0b1000_0000)', out:'1', ex:'One set bit.' }
+    ],
+    constraints:['n is an unsigned 32-bit integer'],
+    tests:[
+      { in:'n=11', out:'3' },
+      { in:'n=128', out:'1' },
+      { in:'n=4294967293', out:'31' },
+      { in:'n=0', out:'0' }
+    ],
+    playbook:{ intuition:'n &= (n-1) clears the lowest set bit each step. Count how many steps until n is zero.',
+      template:'int c=0; while(n){ n &= (n-1); c++; } return c;',
+      slips:'Using signed int and a >> loop (sign issues). Keep n unsigned. Off-by-one if you stop early.' } },
+
+  { id:'ecbits2', topic:'ec-bits', kind:'concept', diff:'med',
+    title:'Endianness byte order',
+    statement:'Memory layout of a multi-byte value.',
+    prompt:'On a <b>little-endian</b> machine, <code class="mono">uint32_t x = 0x01020304;</code>. What is the byte stored at the lowest address <code class="mono">((uint8_t*)&x)[0]</code>?',
+    options:['0x01','0x04','0x02','0x03'], answer:1,
+    explain:'Little-endian stores the least-significant byte first (at the lowest address). The LSB of 0x01020304 is 0x04, so byte[0] = 0x04. On big-endian it would be 0x01.',
+    playbook:{ intuition:'"Little end first" — the smallest-value byte goes to the smallest address.',
+      template:'union { uint32_t v; uint8_t b[4]; } u = { 0x01020304 };\n// u.b[0] == 0x04 on little-endian',
+      slips:'Confusing bit order with byte order. Endianness is about bytes.' } },
+
+  /* ---------- Embedded C: function pointers ---------- */
+  { id:'ecfptr1', topic:'ec-fptr', kind:'concept', diff:'med',
+    title:'Function pointer declaration',
+    statement:'C declarator syntax — the classic parser puzzle.',
+    prompt:'Which declares <b>fp</b> as a pointer to a function taking an int and returning a pointer to char?',
+    options:[
+      'char* fp(int);',
+      'char* (*fp)(int);',
+      'char (*fp)(int)*;',
+      'char** fp(int);'
+    ], answer:1,
+    explain:'Read declarators inside-out: (*fp) is "fp is a pointer", (int) "to a function taking int", char* "returning char*". Option A declares a function returning char*. The parentheses around *fp are what make it a function pointer.',
+    playbook:{ intuition:'Spiral rule: start at the name, parentheses bind tighter than the return type.',
+      template:'typedef char* (*Handler)(int);  // far more readable\nHandler fp = &decode;',
+      slips:'Dropping the parentheses around *fp turns it into a function declaration, not a pointer.' } },
+
+  /* ---------- RTOS: scheduling ---------- */
+  { id:'rtsched1', topic:'rtos-sched', kind:'concept', diff:'med',
+    title:'Preemptive priority scheduling',
+    statement:'FreeRTOS scheduler behavior.',
+    prompt:'In a preemptive, priority-based RTOS (FreeRTOS default), when a high-priority task becomes ready while a lower-priority task is running, the scheduler:',
+    options:[
+      'Lets the low-priority task finish its time slice, then switches',
+      'Immediately preempts and runs the higher-priority task',
+      'Runs them round-robin regardless of priority',
+      'Blocks the high-priority task until the low one yields'
+    ], answer:1,
+    explain:'Preemptive priority scheduling always runs the highest-priority READY task. The moment a higher-priority task becomes ready (e.g. an ISR gives a semaphore), the running lower-priority task is preempted. Round-robin only applies among EQUAL-priority ready tasks (time slicing).',
+    playbook:{ intuition:'"Highest-priority ready task runs, period." Time-slicing is only a tie-breaker among equals.',
+      template:'// ISR gives semaphore -> high-prio task unblocks -> preempts now\nxSemaphoreGiveFromISR(sem, &xHigherPriorityTaskWoken);\nportYIELD_FROM_ISR(xHigherPriorityTaskWoken);',
+      slips:'Assuming time slices apply across priorities. They do not.' } },
+
+  /* ---------- RTOS: sync ---------- */
+  { id:'rtsync1', topic:'rtos-sync', kind:'concept', diff:'med',
+    title:'ISR-safe API variant',
+    statement:'Calling kernel APIs from an interrupt.',
+    prompt:'From inside an ISR in FreeRTOS, to give a semaphore you must call:',
+    options:[
+      'xSemaphoreGive()',
+      'xSemaphoreGiveFromISR()',
+      'Either works identically',
+      'You cannot touch a semaphore from an ISR'
+    ], answer:1,
+    explain:'ISR context cannot block and has restrictions, so FreeRTOS provides ...FromISR() variants that are non-blocking and return whether a context switch should be requested via pxHigherPriorityTaskWoken. Calling the normal blocking API from an ISR is a fault.',
+    playbook:{ intuition:'ISRs must never block. The FromISR APIs are the non-blocking, switch-signalling versions.',
+      template:'BaseType_t hpw = pdFALSE;\nxSemaphoreGiveFromISR(sem, &hpw);\nportYIELD_FROM_ISR(hpw);',
+      slips:'Forgetting portYIELD_FROM_ISR, so the woken high-prio task does not run until the next tick.' } },
+
+  { id:'rtsync2', topic:'rtos-sync', kind:'concept', diff:'hard',
+    title:'Priority inversion remedy',
+    statement:'Mars Pathfinder bug, in miniature.',
+    prompt:'A low-priority task holds a mutex a high-priority task needs, while a medium task hogs the CPU — the high task is stuck. The mechanism that fixes this is:',
+    options:[
+      'Round-robin scheduling',
+      'Priority inheritance (boost the holder to the waiter\u2019s priority)',
+      'Disabling interrupts globally',
+      'Increasing the tick rate'
+    ], answer:1,
+    explain:'This is priority inversion. Priority inheritance temporarily raises the low-priority mutex holder to the priority of the highest task waiting on it, so it can finish and release quickly — the medium task can no longer preempt it. FreeRTOS mutexes implement this; binary semaphores do not.',
+    playbook:{ intuition:'The holder borrows the waiter\u2019s urgency so the middle task can\u2019t starve everyone.',
+      template:'// use a MUTEX (has inheritance), not a binary semaphore, for resource locks\nxMutex = xSemaphoreCreateMutex();',
+      slips:'Using a binary semaphore for mutual exclusion — no inheritance, so inversion persists.' } },
+
+  /* ---------- OS: processes ---------- */
+  { id:'osproc1', topic:'os-proc', kind:'concept', diff:'easy',
+    title:'Process vs thread',
+    statement:'Address space and context-switch cost.',
+    prompt:'Which statement is correct about threads of the same process versus separate processes?',
+    options:[
+      'Threads have separate address spaces; processes share one',
+      'Threads share the address space; switching between them is cheaper than between processes',
+      'Process context switches are always cheaper',
+      'Threads cannot run in parallel on multiple cores'
+    ], answer:1,
+    explain:'Threads in one process share code/heap/globals (one address space) but have separate stacks; switching between them avoids a full address-space (page table / TLB) swap, so it is cheaper than a process switch. Processes are isolated in separate address spaces.',
+    playbook:{ intuition:'Same house, different desks (threads) vs different houses (processes). Walking between desks is cheaper.',
+      template:'// thread switch: save regs + stack pointer\n// process switch: + swap page tables, flush TLB',
+      slips:'Thinking threads are isolated like processes — a wild pointer in one thread corrupts the whole process.' } },
+
+  { id:'osproc2', topic:'os-proc', kind:'concept', diff:'med',
+    title:'Minimizing average waiting time',
+    statement:'CPU scheduling, non-preemptive.',
+    prompt:'For a fixed set of jobs with known burst times, which non-preemptive algorithm minimizes average waiting time?',
+    options:['FCFS','Round Robin','Shortest Job First (SJF)','Priority by arrival'], answer:2,
+    explain:'SJF is provably optimal for minimizing average waiting time (when burst times are known and all jobs are available): running shorter jobs first reduces the cumulative wait of everyone behind them. The catch is it can starve long jobs and requires knowing/estimating burst lengths.',
+    playbook:{ intuition:'Clear the quick errands first so the queue behind them shrinks fastest.',
+      template:'sort by burst ascending -> serve in that order',
+      slips:'Confusing "minimizes average waiting" (SJF) with "fairness/responsiveness" (RR).' } },
+
+  /* ---------- OS: memory ---------- */
+  { id:'osmem1', topic:'os-mem', kind:'concept', diff:'med',
+    title:'Coffman conditions',
+    statement:'Deadlock necessary conditions.',
+    prompt:'Which is <b>NOT</b> one of the four Coffman conditions required for deadlock?',
+    options:[
+      'Mutual exclusion',
+      'Hold and wait',
+      'Preemption of held resources',
+      'Circular wait'
+    ], answer:2,
+    explain:'The four necessary conditions are: mutual exclusion, hold-and-wait, NO preemption, and circular wait. "Preemption of held resources" is the opposite — allowing preemption is actually a deadlock-PREVENTION strategy. Break any one condition and deadlock cannot occur.',
+    playbook:{ intuition:'Deadlock needs no-preemption. So "preemption" being required is the trap answer.',
+      template:'prevent: break one of {mutex, hold&wait, no-preempt, circular-wait}',
+      slips:'Listing "no preemption" vs "preemption" carelessly — sign flip.' } },
+
+  /* ---------- DSA: linear ---------- */
+  { id:'dlin1', topic:'dsa-linear', kind:'code', diff:'easy',
+    title:'Two Sum',
+    statement:'Hash map for O(n) complement lookup. Watch map syntax.',
+    prompt:'Given an array <code class="mono">nums</code> and a target, return indices of the two numbers that add up to target. Exactly one solution; cannot reuse an element.',
+    sig:'vector<int> twoSum(vector<int>& nums, int target)',
+    starter:'class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        \n    }\n};',
+    examples:[
+      { in:'nums=[2,7,11,15], target=9', out:'[0,1]', ex:'2 + 7 = 9.' },
+      { in:'nums=[3,2,4], target=6', out:'[1,2]', ex:'2 + 4 = 6.' }
+    ],
+    constraints:['2 ≤ nums.length ≤ 1e4','-1e9 ≤ nums[i], target ≤ 1e9','exactly one valid answer'],
+    tests:[
+      { in:'nums=[2,7,11,15], target=9', out:'[0,1]' },
+      { in:'nums=[3,2,4], target=6', out:'[1,2]' },
+      { in:'nums=[3,3], target=6', out:'[0,1]' }
+    ],
+    playbook:{ intuition:'For each value, ask "have I already seen its complement (target - value)?" A hash map answers that in O(1).',
+      template:'unordered_map<int,int> seen;\nfor(int i=0;i<nums.size();i++){\n  auto it = seen.find(target-nums[i]);\n  if(it!=seen.end()) return {it->second, i};\n  seen[nums[i]] = i;\n}\nreturn {};',
+      slips:'map syntax: unordered_map<int,int> seen; access seen[k]. Deref find() WITHOUT checking != end(). Insert AFTER the lookup to avoid matching self.' } },
+
+  { id:'dlin2', topic:'dsa-linear', kind:'code', diff:'easy',
+    title:'Valid Parentheses',
+    statement:'Classic stack. Watch top()/pop() separation.',
+    prompt:'Given a string of just <code class="mono">()[]{}</code>, return true if every bracket is closed by the correct type in the correct order.',
+    sig:'bool isValid(string s)',
+    starter:'class Solution {\npublic:\n    bool isValid(string s) {\n        \n    }\n};',
+    examples:[
+      { in:'s = "()[]{}"', out:'true', ex:'All matched.' },
+      { in:'s = "([)]"', out:'false', ex:'Wrong nesting order.' }
+    ],
+    constraints:['1 ≤ s.length ≤ 1e4','s consists of () [] {} only'],
+    tests:[
+      { in:'s="()"', out:'true' },
+      { in:'s="()[]{}"', out:'true' },
+      { in:'s="(]"', out:'false' },
+      { in:'s="([)]"', out:'false' },
+      { in:'s="{[]}"', out:'true' }
+    ],
+    playbook:{ intuition:'Every opener must be closed in reverse order of opening — that is exactly a stack (LIFO).',
+      template:'stack<char> st;\nfor(char c: s){\n  if(c==\'(\'||c==\'[\'||c==\'{\') st.push(c);\n  else { if(st.empty()) return false;\n    char t = st.top(); st.pop();   // SEPARATE calls\n    if((c==\')\'&&t!=\'(\')||(c==\']\'&&t!=\'[\')||(c==\'}\'&&t!=\'{\')) return false; } }\nreturn st.empty();',
+      slips:'top()/pop() are separate — pop() returns void. Check st.empty() BEFORE top(). Remember the final st.empty() check.' } },
+
+  /* ---------- DSA: trees/graphs ---------- */
+  { id:'dtg1', topic:'dsa-tg', kind:'code', diff:'easy',
+    title:'Maximum Depth of Binary Tree',
+    statement:'Recursion + null base case.',
+    prompt:'Return the maximum depth (number of nodes along the longest root-to-leaf path) of a binary tree. Input is given level-order with null for missing nodes.',
+    sig:'int maxDepth(TreeNode* root)',
+    starter:'/* Definition:\n   struct TreeNode { int val; TreeNode *left, *right; };\n*/\nclass Solution {\npublic:\n    int maxDepth(TreeNode* root) {\n        \n    }\n};',
+    examples:[
+      { in:'root = [3,9,20,null,null,15,7]', out:'3', ex:'3 -> 20 -> 15.' },
+      { in:'root = []', out:'0', ex:'Empty tree.' }
+    ],
+    constraints:['0 ≤ nodes ≤ 1e4','-100 ≤ Node.val ≤ 100'],
+    tests:[
+      { in:'root=[3,9,20,null,null,15,7]', out:'3' },
+      { in:'root=[]', out:'0' },
+      { in:'root=[1,null,2]', out:'2' }
+    ],
+    playbook:{ intuition:'Depth of a node = 1 + the deeper of its two subtrees. An empty subtree has depth 0 — that is your base case.',
+      template:'if(!root) return 0;\nreturn 1 + max(maxDepth(root->left), maxDepth(root->right));',
+      slips:'Missing the null base case (edge:null). Forgetting the +1 for the current node (off-by-one).' } },
+
+  /* ---------- DSA: advanced ---------- */
+  { id:'dadv1', topic:'dsa-adv', kind:'code', diff:'easy',
+    title:'Binary Search',
+    statement:'Watch the mid overflow and the loop bound.',
+    prompt:'Given a sorted ascending array of distinct ints and a target, return its index, or -1. Must run in O(log n).',
+    sig:'int search(vector<int>& nums, int target)',
+    starter:'class Solution {\npublic:\n    int search(vector<int>& nums, int target) {\n        \n    }\n};',
+    examples:[
+      { in:'nums=[-1,0,3,5,9,12], target=9', out:'4', ex:'9 is at index 4.' },
+      { in:'nums=[-1,0,3,5,9,12], target=2', out:'-1', ex:'Not present.' }
+    ],
+    constraints:['1 ≤ nums.length ≤ 1e4','nums sorted ascending, all distinct','-1e4 ≤ nums[i], target ≤ 1e4'],
+    tests:[
+      { in:'nums=[-1,0,3,5,9,12], target=9', out:'4' },
+      { in:'nums=[-1,0,3,5,9,12], target=2', out:'-1' },
+      { in:'nums=[5], target=5', out:'0' },
+      { in:'nums=[2,5], target=2', out:'0' }
+    ],
+    playbook:{ intuition:'Halve the search window each step: compare the middle, throw away the half that cannot contain the target.',
+      template:'int lo=0, hi=nums.size()-1;\nwhile(lo<=hi){\n  int mid = lo + (hi-lo)/2;   // avoids overflow\n  if(nums[mid]==target) return mid;\n  if(nums[mid]<target) lo=mid+1; else hi=mid-1;\n}\nreturn -1;',
+      slips:'mid=(lo+hi)/2 can overflow (logic:overflow). lo<=hi vs lo<hi (off-by-one). Update with mid+1 / mid-1, not mid.' } },
+
+  /* ---------- Aptitude ---------- */
+  { id:'apt1', topic:'apt', kind:'concept', diff:'med',
+    title:'Work & time',
+    statement:'Rates add. Classic OA quant.',
+    prompt:'A fills a tank in 6 hours, B in 4 hours. Working together, how long to fill it?',
+    options:['2.4 hours','2 hours','5 hours','3.5 hours'], answer:0,
+    explain:'Rates add: 1/6 + 1/4 = 2/12 + 3/12 = 5/12 tank per hour. Time = 1 / (5/12) = 12/5 = 2.4 hours. The trap is averaging the times (5h) — you average RATES, not times.',
+    playbook:{ intuition:'Think in "tanks per hour", add the rates, then invert for time.',
+      template:'combined_rate = 1/t1 + 1/t2;  time = 1 / combined_rate;',
+      slips:'Averaging the times instead of adding the rates.' } },
+
+  /* ---------- MATLAB ---------- */
+  { id:'mat1', topic:'matlab', kind:'concept', diff:'easy',
+    title:'MATLAB array fundamentals',
+    statement:'Indexing and memory layout — MathWorks-specific awareness.',
+    prompt:'Which pair correctly describes MATLAB arrays?',
+    options:[
+      '0-based indexing, row-major storage',
+      '1-based indexing, column-major storage',
+      '1-based indexing, row-major storage',
+      '0-based indexing, column-major storage'
+    ], answer:1,
+    explain:'MATLAB uses 1-based indexing (A(1) is the first element) and stores matrices in column-major order (down columns first) — same as Fortran, opposite of C row-major. This matters for performance: iterate down columns for cache-friendly access, and for how linear indexing A(k) maps to (row,col).',
+    playbook:{ intuition:'1-based like a human counts; column-major like Fortran — loop down columns for speed.',
+      template:'% fast: inner loop over rows (down a column)\nfor j=1:cols, for i=1:rows, A(i,j)=...; end, end',
+      slips:'Assuming C-style 0-based row-major. Linear index A(k): k = (col-1)*rows + row.' } },
+{"id": "ecm3", "topic": "ec-mem", "kind": "concept", "diff": "easy", "title": "sizeof a pointer", "statement": "Pointer size is fixed by architecture.", "prompt": "On a 64-bit system, what does <code class=\"mono\">sizeof(char*)</code> evaluate to?", "options": ["1", "4", "8", "Depends on what it points to"], "answer": 2, "explain": "A pointer holds an address; on a 64-bit machine every pointer is 8 bytes regardless of the pointed-to type. sizeof(char*) == sizeof(double*) == 8.", "playbook": {"intuition": "A pointer stores an address, and addresses are machine-word sized \u2014 not the size of the thing addressed.", "slips": "Confusing sizeof(pointer) with sizeof(*pointer)."}},
+{"id": "ecm4", "topic": "ec-mem", "kind": "concept", "diff": "med", "title": "Array decays to pointer", "statement": "sizeof on array vs on a parameter.", "prompt": "Inside <code class=\"mono\">void f(int a[10])</code>, what does <code class=\"mono\">sizeof(a)</code> give on a 64-bit system?", "options": ["40 (10 ints)", "8 (a is really a pointer)", "10", "Compile error"], "answer": 1, "explain": "An array parameter decays to a pointer \u2014 int a[10] in a parameter list is exactly int* a. So sizeof(a) is the pointer size (8), not 40. The length information is lost across the call.", "playbook": {"intuition": "Arrays decay to pointers when passed to functions; the [10] is decorative.", "slips": "Relying on sizeof(arr)/sizeof(arr[0]) inside a function to get length \u2014 it breaks after decay."}},
+{"id": "ecm5", "topic": "ec-mem", "kind": "concept", "diff": "easy", "title": "Uninitialized pointer", "statement": "Wild pointer dereference.", "prompt": "<code class=\"mono\">int *p; *p = 5;</code> with no other setup. What happens?", "options": ["Stores 5 safely", "Undefined behavior \u2014 p points nowhere valid", "Always crashes with SIGSEGV", "Allocates memory automatically"], "answer": 1, "explain": "p holds an indeterminate value, so writing through it is undefined behavior. It MAY crash, may silently corrupt memory, may appear to work \u2014 that unpredictability is the whole danger.", "playbook": {"intuition": "An uninitialized pointer is a loaded gun aimed at a random address.", "slips": "Assuming it 'always crashes' \u2014 UB can also silently corrupt and pass tests."}},
+{"id": "ecm6", "topic": "ec-mem", "kind": "concept", "diff": "med", "title": "Pointer arithmetic units", "statement": "Scaling by element size.", "prompt": "<code class=\"mono\">int* p = arr;</code> Adding 1 to p (<code class=\"mono\">p + 1</code>) moves the address forward by how many bytes (int = 4 bytes)?", "options": ["1", "4", "8", "Undefined"], "answer": 1, "explain": "Pointer arithmetic is in units of the pointed-to type. p+1 advances by sizeof(int) = 4 bytes, landing on the next element. This is why a void* cannot be incremented portably \u2014 it has no element size.", "playbook": {"intuition": "p + n moves n ELEMENTS, the compiler multiplies by sizeof(element) for you.", "slips": "Thinking p+1 means +1 byte. It means +1 element."}},
+{"id": "ecm7", "topic": "ec-mem", "kind": "concept", "diff": "med", "title": "const pointer vs pointer to const", "statement": "Where const binds.", "prompt": "Given <code class=\"mono\">int x=1, y=2; const int* p = &x;</code> which is illegal?", "options": ["p = &y;", "*p = 9;", "Both legal", "Both illegal"], "answer": 1, "explain": "const int* p is a pointer to const int: you may repoint p (p=&y is fine) but you may NOT write through it (*p=9 is illegal). Read right-to-left: p is a pointer to int that is const. Contrast int* const p (constant pointer to mutable int).", "playbook": {"intuition": "Read declarations right-to-left. 'const int*' = pointer to (const int): the data is locked, the pointer roams.", "slips": "Swapping the two cases. int* const p locks the pointer; const int* p locks the pointee."}},
+{"id": "ecm8", "topic": "ec-mem", "kind": "concept", "diff": "easy", "title": "Stack vs heap", "statement": "Where storage lives.", "prompt": "A local variable <code class=\"mono\">int buf[64];</code> declared inside a function is stored on the:", "options": ["Heap", "Stack", "Static/BSS segment", "CPU registers only"], "answer": 1, "explain": "Automatic local variables live on the stack and are reclaimed when the function returns. Heap storage comes only from malloc/new and must be freed explicitly. Returning the address of a stack local is a classic dangling-pointer bug.", "playbook": {"intuition": "Locals = stack (auto-freed on return). malloc/new = heap (you free it).", "slips": "Returning &localArray from a function \u2014 it dies when the frame pops."}},
+{"id": "ecm9", "topic": "ec-mem", "kind": "concept", "diff": "easy", "title": "Memory leak", "statement": "Allocation without release.", "prompt": "<code class=\"mono\">char* p = (char*)malloc(100);</code> then the function returns without storing or freeing p. This is a:", "options": ["Dangling pointer", "Memory leak", "Double free", "Buffer overflow"], "answer": 1, "explain": "The only reference to the block (p) is lost when the function returns, but the block is still allocated \u2014 unreachable and unfreeable. That is a memory leak. In long-running embedded firmware, leaks eventually exhaust the heap.", "playbook": {"intuition": "Lost the only pointer to a live block = leak. The memory is stranded.", "slips": "Confusing leak (block alive, pointer lost) with dangling (pointer alive, block freed)."}},
+{"id": "ecm10", "topic": "ec-mem", "kind": "concept", "diff": "med", "title": "Modifying a string literal", "statement": "Read-only storage.", "prompt": "<code class=\"mono\">char* s = \"hi\"; s[0] = 'H';</code> The write is:", "options": ["Fine", "Undefined behavior \u2014 string literals are read-only", "A compile error", "Allocates a copy first"], "answer": 1, "explain": "String literals live in read-only memory; writing to one is undefined behavior (often a fault). Use char s[] = \"hi\"; to get a writable copy on the stack. Prefer const char* for literal pointers so the compiler catches the write.", "playbook": {"intuition": "char* to a literal points into read-only memory. Want to edit? Make an array copy: char s[]=\"hi\".", "slips": "char* s vs char s[] \u2014 only the array form is writable."}},
+{"id": "ecm11", "topic": "ec-mem", "kind": "concept", "diff": "easy", "title": "Double free", "statement": "Freeing twice.", "prompt": "Calling <code class=\"mono\">free(p)</code> twice on the same non-null pointer (not reassigned between) is:", "options": ["Harmless", "Undefined behavior \u2014 heap corruption", "Frees double the memory", "Always caught by the compiler"], "answer": 1, "explain": "Double free is undefined behavior and a common exploit vector \u2014 it corrupts the allocator's bookkeeping. Defuse it by setting p = nullptr after free; freeing a null pointer is guaranteed safe and does nothing.", "playbook": {"intuition": "free(p); p=nullptr; \u2014 because free(nullptr) is a safe no-op.", "slips": "Forgetting to null after free, then a second free path triggers corruption."}},
+{"id": "ecq2", "topic": "ec-qual", "kind": "concept", "diff": "med", "title": "int* const p", "statement": "Constant pointer.", "prompt": "<code class=\"mono\">int x=1,y=2; int* const p=&x;</code> Which line is illegal?", "options": ["*p = 9;", "p = &y;", "Both legal", "Both illegal"], "answer": 1, "explain": "int* const p is a constant pointer to a mutable int. You may change the data (*p=9 ok) but not repoint it (p=&y illegal). It is the mirror image of const int* p.", "playbook": {"intuition": "The const sits next to p, so p itself is frozen; the int it points to is free.", "slips": "Mixing up int* const (pointer frozen) with const int* (data frozen)."}},
+{"id": "ecq3", "topic": "ec-qual", "kind": "concept", "diff": "med", "title": "static local lifetime", "statement": "Persistent local.", "prompt": "A <code class=\"mono\">static int count = 0;</code> inside a function:", "options": ["Is re-created at 0 on every call", "Keeps its value between calls; initialized once", "Is shared across all functions", "Lives on the heap"], "answer": 1, "explain": "A static local has program lifetime (stored in the data/BSS segment, not the stack) but function scope. It is initialized once and retains its value across calls \u2014 useful for counters and one-time init flags in firmware.", "playbook": {"intuition": "static local = lives forever, visible only here. Init runs once.", "slips": "Assuming it resets each call like a normal local."}},
+{"id": "ecq4", "topic": "ec-qual", "kind": "concept", "diff": "med", "title": "static at file scope", "statement": "Internal linkage.", "prompt": "Marking a global function or variable <code class=\"mono\">static</code> at file scope:", "options": ["Makes it faster", "Gives it internal linkage \u2014 invisible to other translation units", "Puts it on the stack", "Makes it const"], "answer": 1, "explain": "At file scope, static means internal linkage: the symbol is private to its .c/.cpp file and cannot be referenced (or collide) from elsewhere. It is the C way to make a helper 'module-private'.", "playbook": {"intuition": "File-scope static = private to this file. Different meaning from static-local.", "slips": "static has two unrelated meanings (storage duration vs linkage) depending on context."}},
+{"id": "ecq5", "topic": "ec-qual", "kind": "concept", "diff": "easy", "title": "extern keyword", "statement": "Declaration vs definition.", "prompt": "<code class=\"mono\">extern int g;</code> in a header tells the compiler:", "options": ["Allocate storage for g here", "g is defined in some other translation unit; just declare it", "g is constant", "g is thread-local"], "answer": 1, "explain": "extern declares without defining \u2014 it promises that g exists somewhere and storage is allocated in exactly one .c file. This is how you share a global across files without multiple-definition link errors.", "playbook": {"intuition": "extern = 'trust me, it lives elsewhere'. Declare in the header, define once in a source file.", "slips": "Defining (not just declaring) a global in a header included by many files \u2192 duplicate symbol."}},
+{"id": "ecq6", "topic": "ec-qual", "kind": "concept", "diff": "hard", "title": "Unsigned comparison trap", "statement": "Implicit conversion.", "prompt": "What does <code class=\"mono\">-1 &lt; 1u</code> evaluate to in C++?", "options": ["true", "false", "Undefined", "Compile error"], "answer": 1, "explain": "1u is unsigned, so -1 is converted to unsigned (a huge value, 4294967295 on 32-bit). That huge value is NOT less than 1, so the result is false. Mixing signed and unsigned in comparisons is a classic embedded bug (e.g. for-loops with unsigned counters going to -1).", "playbook": {"intuition": "Signed meets unsigned \u2192 signed converts up to a giant unsigned. -1 becomes UINT_MAX.", "slips": "for(unsigned i=n; i>=0; i--) loops forever \u2014 i never goes negative."}},
+{"id": "ecq7", "topic": "ec-qual", "kind": "concept", "diff": "med", "title": "Integer promotion", "statement": "char arithmetic.", "prompt": "In <code class=\"mono\">char a=100, b=100; int r = a + b;</code> what is r?", "options": ["-56 (overflow)", "200", "Undefined", "56"], "answer": 1, "explain": "Before the addition, both chars are promoted to int (integer promotion), so 100+100=200 is computed in int and stored fine. Overflow would only bite if you stored back into a char (200 doesn't fit in signed char).", "playbook": {"intuition": "Small types promote to int before arithmetic \u2014 the math happens in int width.", "slips": "Worrying about char overflow during the add; the overflow risk is in the STORE, not the add."}},
+{"id": "ecq8", "topic": "ec-qual", "kind": "concept", "diff": "easy", "title": "Fixed-width types", "statement": "Portable sizing.", "prompt": "Why prefer <code class=\"mono\">int32_t</code> over <code class=\"mono\">int</code> in a hardware register driver?", "options": ["int32_t is faster", "int32_t guarantees exactly 32 bits across platforms; int's width is implementation-defined", "int cannot hold 32 bits", "No real difference"], "answer": 1, "explain": "int is only guaranteed at least 16 bits; its actual width varies by platform/compiler. Register layouts and wire protocols need exact widths, so int32_t/uint8_t etc. from <cstdint> make the code portable and unambiguous.", "playbook": {"intuition": "For registers and protocols, exact width matters \u2014 reach for the <cstdint> fixed types.", "slips": "Assuming int is always 32 bits."}},
+{"id": "ecb3", "topic": "ec-bits", "kind": "concept", "diff": "easy", "title": "Set a bit", "statement": "OR with a mask.", "prompt": "To set bit n of x (make it 1) without disturbing others, you write:", "options": ["x &= (1u &lt;&lt; n);", "x |= (1u &lt;&lt; n);", "x ^= (1u &lt;&lt; n);", "x &= ~(1u &lt;&lt; n);"], "answer": 1, "explain": "OR with a single-1 mask forces that bit to 1 and leaves the rest unchanged (a|1=1, a|0=a). Clearing uses AND with an inverted mask; toggling uses XOR.", "playbook": {"intuition": "OR sets, AND-with-~mask clears, XOR toggles. Memorize the trio.", "slips": "Use 1u (unsigned) for the mask to avoid shifting into the sign bit."}},
+{"id": "ecb4", "topic": "ec-bits", "kind": "concept", "diff": "easy", "title": "Clear a bit", "statement": "AND with inverted mask.", "prompt": "To clear bit n of x (force it to 0), the idiom is:", "options": ["x |= (1u &lt;&lt; n);", "x &= ~(1u &lt;&lt; n);", "x ^= (1u &lt;&lt; n);", "x &= (1u &lt;&lt; n);"], "answer": 1, "explain": "~(1<<n) is all 1s except a 0 at position n. ANDing keeps every other bit and zeroes bit n.", "playbook": {"intuition": "Build an all-ones-except-n mask with ~(1<<n), then AND.", "slips": "Forgetting the ~ \u2014 x &= (1<<n) zeroes everything EXCEPT n."}},
+{"id": "ecb5", "topic": "ec-bits", "kind": "concept", "diff": "easy", "title": "Test a bit", "statement": "Shift and mask.", "prompt": "To check whether bit n of x is set, evaluate:", "options": ["(x &amp; (1u &lt;&lt; n)) != 0", "x % n", "x / (1 &lt;&lt; n)", "x ^ n"], "answer": 0, "explain": "Mask off everything but bit n with x & (1<<n); the result is nonzero iff that bit was set. Equivalently (x >> n) & 1 gives the bit as 0 or 1.", "playbook": {"intuition": "Isolate the bit with a mask; nonzero means it was set.", "slips": "Returning the masked value directly as a bool is fine, but (x>>n)&1 is cleaner if you need 0/1."}},
+{"id": "ecb6", "topic": "ec-bits", "kind": "concept", "diff": "med", "title": "Struct padding", "statement": "Alignment.", "prompt": "On a 32-bit-aligned target, <code class=\"mono\">struct S { char a; int b; char c; };</code> most likely has sizeof:", "options": ["6", "12", "9", "4"], "answer": 1, "explain": "Padding aligns int b to a 4-byte boundary: a(1)+3 pad, b(4), c(1)+3 trailing pad = 12. Reorder to {int b; char a; char c;} to shrink to 8. This matters for memory-tight MCUs and for matching on-wire layouts (use #pragma pack).", "playbook": {"intuition": "Compilers insert padding so each member sits on its natural alignment; order members large-to-small to minimize it.", "slips": "Assuming sizeof(struct) == sum of member sizes. Padding makes it bigger."}},
+{"id": "ecb7", "topic": "ec-bits", "kind": "concept", "diff": "easy", "title": "Union size", "statement": "Overlapping storage.", "prompt": "<code class=\"mono\">union U { uint8_t b; uint32_t w; };</code> What is sizeof(U)?", "options": ["1", "5", "4", "8"], "answer": 2, "explain": "A union's members share the same storage, so its size is that of its largest member (plus alignment) \u2014 here 4 bytes for the uint32_t. Unions are the standard trick for type-punning bytes of a word (with endianness caveats).", "playbook": {"intuition": "Union = all members overlaid in one spot; size = biggest member.", "slips": "Thinking union size is the SUM of members (that's a struct)."}},
+{"id": "ecb8", "topic": "ec-bits", "kind": "concept", "diff": "med", "title": "Bitfields purpose", "statement": "Packing flags.", "prompt": "<code class=\"mono\">struct { unsigned mode:2; unsigned en:1; };</code> Bitfields are primarily used to:", "options": ["Speed up arithmetic", "Pack several small fields into few bits, e.g. for registers/flags", "Guarantee atomicity", "Avoid padding entirely"], "answer": 1, "explain": "Bitfields let you name and pack sub-byte fields (a 2-bit mode, a 1-bit enable) into a single word \u2014 handy for register maps and compact flag sets. Caveat: bit ordering and packing are implementation-defined, so they are not portable for wire formats.", "playbook": {"intuition": "Bitfields name sub-byte chunks \u2014 great for readable register definitions.", "slips": "Relying on bitfield bit-order across compilers/endianness \u2014 it is implementation-defined."}},
+{"id": "ecb9", "topic": "ec-bits", "kind": "concept", "diff": "hard", "title": "Signed right shift", "statement": "Sign extension.", "prompt": "For <code class=\"mono\">int8_t x = -8; x &gt;&gt; 1;</code> (arithmetic shift), the result is:", "options": ["-4", "124", "-3", "Undefined"], "answer": 0, "explain": "Right-shifting a signed negative value does arithmetic shift on most compilers: the sign bit is replicated, so -8 >> 1 = -4 (like dividing by 2 toward negative infinity for powers of two). On unsigned types it would be a logical shift (zero-fill).", "playbook": {"intuition": "Signed >> copies the sign bit in; unsigned >> fills zeros. Use unsigned when you want pure bit movement.", "slips": "Assuming >> always zero-fills. For signed negatives it sign-extends."}},
+{"id": "ecbk1", "topic": "ec-bits", "kind": "code", "diff": "med", "title": "Reverse Bits", "statement": "Reverse the 32-bit representation.", "prompt": "Reverse the bits of a given 32-bit unsigned integer n and return the result.", "sig": "uint32_t reverseBits(uint32_t n)", "starter": "class Solution {\npublic:\n    uint32_t reverseBits(uint32_t n) {\n        \n    }\n};", "examples": [{"in": "n = 43261596", "out": "964176192", "ex": "...00000010100101000001111010011100 reverses to ...00111001011110000010100101000000."}], "constraints": ["n is a 32-bit unsigned integer"], "tests": [{"in": "n=43261596", "out": "964176192"}, {"in": "n=4294967293", "out": "3221225471"}, {"in": "n=0", "out": "0"}, {"in": "n=1", "out": "2147483648"}], "playbook": {"intuition": "Pull bits off the low end of n one at a time and push them onto the low end of the result \u2014 the result builds up mirror-reversed.", "template": "uint32_t r=0;\nfor(int i=0;i<32;i++){ r=(r<<1)|(n&1); n>>=1; }\nreturn r;", "slips": "Loop exactly 32 times. Keep everything unsigned so the high bit shifts cleanly."}},
+{"id": "ecbk2", "topic": "ec-bits", "kind": "code", "diff": "easy", "title": "Power of Two", "statement": "Single-bit check.", "prompt": "Return true if the integer n is a power of two, else false.", "sig": "bool isPowerOfTwo(int n)", "starter": "class Solution {\npublic:\n    bool isPowerOfTwo(int n) {\n        \n    }\n};", "examples": [{"in": "n = 16", "out": "true", "ex": "2^4 = 16."}, {"in": "n = 12", "out": "false", "ex": "Not a power of two."}], "constraints": ["-2^31 <= n <= 2^31 - 1"], "tests": [{"in": "n=1", "out": "true"}, {"in": "n=16", "out": "true"}, {"in": "n=12", "out": "false"}, {"in": "n=0", "out": "false"}, {"in": "n=-8", "out": "false"}], "playbook": {"intuition": "A power of two has exactly one set bit. Clearing the lowest set bit with n&(n-1) leaves zero only in that case \u2014 but guard n>0 first.", "template": "return n>0 && (n&(n-1))==0;", "slips": "Forgetting n>0: n&(n-1) is also 0 for n==0 and behaves oddly for negatives."}},
+{"id": "ecbk3", "topic": "ec-bits", "kind": "code", "diff": "easy", "title": "Hamming Distance", "statement": "Differing bits.", "prompt": "Return the number of bit positions at which the two integers x and y differ.", "sig": "int hammingDistance(int x, int y)", "starter": "class Solution {\npublic:\n    int hammingDistance(int x, int y) {\n        \n    }\n};", "examples": [{"in": "x = 1, y = 4", "out": "2", "ex": "0001 vs 0100 differ in two positions."}], "constraints": ["0 <= x, y <= 2^31 - 1"], "tests": [{"in": "x=1, y=4", "out": "2"}, {"in": "x=3, y=1", "out": "1"}, {"in": "x=0, y=0", "out": "0"}, {"in": "x=7, y=0", "out": "3"}], "playbook": {"intuition": "XOR turns differing bits into 1s and matching bits into 0s. So the answer is just the population count of x^y.", "template": "int z=x^y, c=0; while(z){ z&=z-1; c++; } return c;", "slips": "Use the Kernighan z&=z-1 loop instead of checking all 32 bits."}},
+{"id": "ecf2", "topic": "ec-fptr", "kind": "concept", "diff": "med", "title": "typedef a function pointer", "statement": "Readable callbacks.", "prompt": "Which typedef names <b>Cmp</b> as 'pointer to function taking two const void* and returning int' (a qsort comparator)?", "options": ["typedef int Cmp(const void*, const void*);", "typedef int (*Cmp)(const void*, const void*);", "typedef int* Cmp(const void*, const void*);", "typedef (*int)(const void*, const void*) Cmp;"], "answer": 1, "explain": "The (*Cmp) makes it a pointer-to-function; the parameter list and int return type complete it. The first option types a function (not a pointer). qsort's comparator has exactly this signature.", "playbook": {"intuition": "Wrap the name in (* ) to get a function POINTER typedef, not a function type.", "slips": "Dropping the parentheses turns it into a function-type typedef."}},
+{"id": "ecf3", "topic": "ec-fptr", "kind": "concept", "diff": "med", "title": "Array of function pointers", "statement": "Jump table.", "prompt": "An array of function pointers is most commonly used to implement:", "options": ["A linked list", "A jump/dispatch table (e.g. command or state handlers)", "Recursion", "A hash set"], "answer": 1, "explain": "Indexing an array of function pointers by an opcode/state replaces a long switch with O(1) dispatch \u2014 the classic jump table used in interpreters, command parsers, and state machines on embedded systems.", "playbook": {"intuition": "handlers[opcode]() \u2014 turn a switch into a table lookup.", "slips": "Bounds-check the index before calling handlers[i] \u2014 out-of-range = wild call."}},
+{"id": "ecf4", "topic": "ec-fptr", "kind": "concept", "diff": "hard", "title": "Signed overflow is UB", "statement": "Undefined behavior.", "prompt": "In C/C++, signed integer overflow (e.g. <code class=\"mono\">INT_MAX + 1</code>) is:", "options": ["Defined to wrap around", "Undefined behavior", "Always traps", "Implementation-defined to saturate"], "answer": 1, "explain": "Signed overflow is undefined behavior \u2014 the compiler may assume it never happens and optimize accordingly (e.g. assuming x+1 > x always). UNSIGNED overflow, by contrast, is defined to wrap modulo 2^n. This is why you cannot detect signed overflow by checking after the fact.", "playbook": {"intuition": "Unsigned wraps (defined); signed overflow is UB the optimizer exploits.", "slips": "Writing if(x+1 < x) to detect signed overflow \u2014 the compiler may delete that check."}},
+{"id": "ecf5", "topic": "ec-fptr", "kind": "concept", "diff": "hard", "title": "Sequence point UB", "statement": "Unsequenced modification.", "prompt": "What is the status of <code class=\"mono\">i = i++ + 1;</code> in C++?", "options": ["Defined, i increases by 2", "Undefined behavior (i modified twice without sequencing)", "Defined, i unchanged", "Compile error"], "answer": 1, "explain": "i is read and written multiple times with no sequencing between the writes, which is undefined behavior. Different compilers/flags give different results. The rule: do not modify an object more than once between sequence points, and do not both read (for another purpose) and modify it unsequenced.", "playbook": {"intuition": "Modifying the same object twice with no sequence point between = UB. Split it into two statements.", "slips": "Trusting any specific output from i=i++ \u2014 there is no correct answer to predict."}},
+{"id": "ecf6", "topic": "ec-fptr", "kind": "concept", "diff": "med", "title": "Calling through a function pointer", "statement": "Call syntax.", "prompt": "Given <code class=\"mono\">int (*fp)(int) = &square;</code>, which calls it correctly?", "options": ["Only (*fp)(5)", "Only fp(5)", "Both fp(5) and (*fp)(5)", "Neither; must use square(5)"], "answer": 2, "explain": "A function name decays to a pointer, so both fp(5) and the explicit-dereference (*fp)(5) are valid and equivalent. The &square is also optional \u2014 square alone decays to the same pointer.", "playbook": {"intuition": "fp(5) and (*fp)(5) are the same call; the dereference is optional sugar.", "slips": "Overthinking the syntax \u2014 fp(args) just works."}},
+{"id": "rts2", "topic": "rtos-sched", "kind": "concept", "diff": "easy", "title": "Preemptive vs cooperative", "statement": "Who decides switches.", "prompt": "The key difference between preemptive and cooperative (non-preemptive) scheduling is:", "options": ["Cooperative uses priorities, preemptive does not", "Preemptive can interrupt a running task at any time; cooperative switches only when a task yields/blocks", "Preemptive has no context switches", "They are identical on single-core"], "answer": 1, "explain": "Preemptive schedulers can forcibly switch out a running task (on a tick or a higher-priority task becoming ready). Cooperative schedulers rely on each task to voluntarily yield \u2014 one misbehaving task can hog the CPU forever. FreeRTOS defaults to preemptive.", "playbook": {"intuition": "Preemptive = the kernel can yank the CPU away. Cooperative = tasks must hand it over politely.", "slips": "Assuming cooperative is safer \u2014 a non-yielding task starves everyone."}},
+{"id": "rts3", "topic": "rtos-sched", "kind": "concept", "diff": "med", "title": "Time slicing scope", "statement": "Round-robin among equals.", "prompt": "In FreeRTOS with time slicing on, round-robin sharing happens among tasks that:", "options": ["Have different priorities", "Share the SAME (highest ready) priority", "Are all blocked", "Belong to the same queue"], "answer": 1, "explain": "Time slicing only round-robins tasks at the same priority level. The scheduler always picks the highest-priority ready tasks first; if several share that top priority, the tick rotates among them. Lower-priority tasks still get nothing while a higher one is ready.", "playbook": {"intuition": "Slicing is a tie-breaker among equal-priority ready tasks, never across priority levels.", "slips": "Expecting low-priority tasks to get a slice while a higher-priority task is ready."}},
+{"id": "rts4", "topic": "rtos-sched", "kind": "concept", "diff": "med", "title": "The idle task", "statement": "Lowest priority runner.", "prompt": "The FreeRTOS idle task exists primarily to:", "options": ["Run application logic", "Run when no other task is ready (priority 0); free deleted task memory and host low-power hooks", "Handle all interrupts", "Boost low-priority tasks"], "answer": 1, "explain": "The idle task runs at priority 0 whenever nothing else is ready. It cleans up the stacks/TCBs of deleted tasks and provides a hook where you can put the core into a low-power sleep \u2014 central to battery-powered designs.", "playbook": {"intuition": "Idle = the 'nothing-to-do' task; the natural place for sleep and cleanup.", "slips": "Blocking the idle task or never yielding to it \u2014 deleted-task memory then never gets reclaimed."}},
+{"id": "rts5", "topic": "rtos-sched", "kind": "concept", "diff": "med", "title": "Task states", "statement": "Ready/Running/Blocked.", "prompt": "A task that called <code class=\"mono\">vTaskDelay(100)</code> is in which state?", "options": ["Running", "Ready", "Blocked", "Suspended"], "answer": 2, "explain": "vTaskDelay puts the task into the Blocked state until the timeout expires (or an event arrives), during which it consumes no CPU and other tasks run. Suspended is different \u2014 that requires an explicit vTaskSuspend and ignores timeouts.", "playbook": {"intuition": "Waiting on a delay/event = Blocked (timed). Suspended is a manual, untimed freeze.", "slips": "Confusing Blocked (will auto-wake) with Suspended (stays until explicitly resumed)."}},
+{"id": "rts6", "topic": "rtos-sched", "kind": "concept", "diff": "med", "title": "Context switch contents", "statement": "What gets saved.", "prompt": "During a context switch, the kernel must save and restore at minimum:", "options": ["Only the program counter", "The CPU register set and the task's stack pointer", "The entire RAM", "Nothing on ARM Cortex-M"], "answer": 1, "explain": "A context switch snapshots the running task's CPU registers (including PC and status) and its stack pointer into its TCB/stack, then loads the next task's. On Cortex-M the hardware auto-stacks some registers on exception entry, but the SP and remaining registers are still the kernel's job (PendSV).", "playbook": {"intuition": "Save enough to resume exactly where the task left off: registers + stack pointer.", "slips": "Thinking a switch copies memory \u2014 it swaps register/SP state, not the address space (same process)."}},
+{"id": "rts7", "topic": "rtos-sched", "kind": "concept", "diff": "hard", "title": "vTaskDelay vs vTaskDelayUntil", "statement": "Drift-free periodicity.", "prompt": "For a task that must run at a precise fixed period, you should use:", "options": ["vTaskDelay \u2014 it is exact", "vTaskDelayUntil \u2014 it anchors to an absolute wake time and avoids drift", "busy-wait loop", "Either; no difference"], "answer": 1, "explain": "vTaskDelay sleeps a RELATIVE number of ticks from the moment it is called, so any time spent doing work before the call accumulates as drift. vTaskDelayUntil (xTaskDelayUntil) tracks an absolute previous-wake time, keeping the period exact regardless of work duration.", "playbook": {"intuition": "Relative delay drifts by your work time; delay-until pins the next wake to a fixed grid.", "slips": "Using vTaskDelay for a control loop and wondering why the period slowly slips."}},
+{"id": "rts8", "topic": "rtos-sched", "kind": "concept", "diff": "hard", "title": "Rate monotonic priority", "statement": "RMS rule.", "prompt": "Under Rate Monotonic Scheduling, priorities are assigned so that:", "options": ["Longer-period tasks get higher priority", "Shorter-period (more frequent) tasks get higher priority", "All tasks share one priority", "Priority follows CPU usage"], "answer": 1, "explain": "RMS is a static-priority scheme: the shorter a task's period (the more often it must run), the higher its priority. It is optimal among fixed-priority schedulers, with a classic utilization bound around 69% (n(2^(1/n)-1)) guaranteeing schedulability.", "playbook": {"intuition": "More frequent deadline = more urgent = higher priority. Period drives priority.", "slips": "Assigning priority by execution time instead of period."}},
+{"id": "rty3", "topic": "rtos-sync", "kind": "concept", "diff": "med", "title": "Binary vs counting semaphore", "statement": "Resource counting.", "prompt": "A counting semaphore differs from a binary semaphore in that it:", "options": ["Cannot be used from an ISR", "Maintains a count, allowing up to N concurrent takes (e.g. N identical resources)", "Has priority inheritance", "Is always faster"], "answer": 1, "explain": "A binary semaphore is effectively a counting semaphore capped at 1 (available/unavailable). A counting semaphore holds an integer count, perfect for managing a pool of N identical resources or counting events that haven't been serviced yet.", "playbook": {"intuition": "Counting semaphore = a tally of available units; binary = just 0/1.", "slips": "Using a binary semaphore where you need to count multiple pending events (you lose counts)."}},
+{"id": "rty4", "topic": "rtos-sync", "kind": "concept", "diff": "hard", "title": "Mutex vs binary semaphore", "statement": "Ownership.", "prompt": "Why use a mutex rather than a binary semaphore for protecting a shared resource?", "options": ["Mutexes are faster", "A mutex has ownership and priority inheritance, preventing unbounded priority inversion", "Binary semaphores cannot be taken", "Mutexes work only on multicore"], "answer": 1, "explain": "A mutex is owned by the task that took it and supports priority inheritance, so a high-priority waiter can boost the low-priority holder and avoid unbounded inversion. A binary semaphore has no owner and no inheritance \u2014 fine for signaling, risky for mutual exclusion.", "playbook": {"intuition": "Locks need an owner + inheritance \u2192 mutex. Signaling between tasks/ISRs \u2192 semaphore.", "slips": "Using a binary semaphore as a lock and reintroducing priority inversion."}},
+{"id": "rty5", "topic": "rtos-sync", "kind": "concept", "diff": "med", "title": "Queue passes by copy", "statement": "Data ownership.", "prompt": "When you send a struct to a FreeRTOS queue with xQueueSend, the queue:", "options": ["Stores a pointer to your struct", "Copies the bytes of the item into the queue's storage", "Shares the struct by reference", "Frees your struct"], "answer": 1, "explain": "Queues copy the item by value into their internal buffer, so the sender's variable can safely go out of scope afterwards. For large payloads, send a pointer instead (and manage that buffer's lifetime yourself) to avoid expensive copies.", "playbook": {"intuition": "Queues copy bytes in. Small items: send by value. Large items: send a pointer you keep alive.", "slips": "Sending a pointer to a stack local that dies before the receiver reads it."}},
+{"id": "rty6", "topic": "rtos-sync", "kind": "concept", "diff": "hard", "title": "Deadlock from lock ordering", "statement": "Circular wait.", "prompt": "Task A takes mutex M1 then waits for M2; Task B takes M2 then waits for M1. This is:", "options": ["Priority inversion", "A deadlock from inconsistent lock ordering (circular wait)", "A race condition only", "Impossible with mutexes"], "answer": 1, "explain": "Each task holds one lock and waits for the other \u2014 a circular wait, i.e. deadlock. The standard fix is a global lock-ordering discipline: every task must acquire M1 before M2 (or use try-lock with backoff). Priority inheritance does NOT prevent this.", "playbook": {"intuition": "Two locks, two tasks, opposite order \u2192 circular wait. Enforce one global acquisition order.", "slips": "Assuming mutexes alone prevent deadlock; ordering does, not the mutex."}},
+{"id": "rty7", "topic": "rtos-sync", "kind": "concept", "diff": "med", "title": "Critical section", "statement": "Disabling interrupts.", "prompt": "<code class=\"mono\">taskENTER_CRITICAL()</code> protects a very short shared-data access by:", "options": ["Taking a mutex", "Masking interrupts (up to a config level) so no preemption/ISR interferes", "Yielding the CPU", "Spawning a guard task"], "answer": 1, "explain": "A critical section masks interrupts (below configMAX_SYSCALL_INTERRUPT_PRIORITY), guaranteeing atomic access to a tiny shared region. It must be extremely short \u2014 while inside, ISRs are blocked, hurting latency. For longer protection use a mutex.", "playbook": {"intuition": "Critical section = briefly turn off the schedulers/ISRs. Keep it microscopic.", "slips": "Doing slow work or blocking calls inside a critical section \u2014 it wrecks interrupt latency."}},
+{"id": "rty8", "topic": "rtos-sync", "kind": "concept", "diff": "hard", "title": "Recursive mutex", "statement": "Re-entrant locking.", "prompt": "A recursive mutex is needed when:", "options": ["Two tasks share a lock", "The SAME task must take the lock it already holds (e.g. nested calls)", "An ISR takes a lock", "You want counting semantics"], "answer": 1, "explain": "A standard mutex deadlocks if the owning task tries to take it again. A recursive mutex tracks a take-count for the owner, allowing nested acquisitions, and only releases when the count returns to zero. Use sparingly \u2014 it often signals a design that could be flattened.", "playbook": {"intuition": "Same task locks again through nested calls \u2192 recursive mutex (counted ownership).", "slips": "Forgetting to give() once per take() with a recursive mutex \u2014 count never hits zero."}},
+{"id": "osp3", "topic": "os-proc", "kind": "concept", "diff": "med", "title": "PCB contents", "statement": "Process bookkeeping.", "prompt": "Which is NOT typically stored in a Process Control Block (PCB)?", "options": ["Program counter / CPU registers", "Process state and PID", "The full source code of the program", "Memory management info (page tables) and open files"], "answer": 2, "explain": "The PCB holds the runtime metadata the OS needs to manage and switch a process: PID, state, saved registers/PC, scheduling info, memory maps, open file descriptors, accounting. The program's source code is not part of it (compiled instructions live in the text segment).", "playbook": {"intuition": "PCB = the OS's index card for a process: identity, saved CPU state, memory + I/O bookkeeping.", "slips": "Confusing the PCB (metadata) with the process's code/data segments."}},
+{"id": "osp4", "topic": "os-proc", "kind": "concept", "diff": "med", "title": "fork() return value", "statement": "Parent vs child.", "prompt": "After a successful <code class=\"mono\">fork()</code>, the return value in the CHILD process is:", "options": ["The child's PID", "0", "The parent's PID", "-1"], "answer": 1, "explain": "fork returns 0 in the child and the child's PID in the parent (and -1 on failure). That asymmetry is exactly how a single code path branches into parent-only and child-only logic right after the call.", "playbook": {"intuition": "0 means 'I am the child'; a positive PID means 'I am the parent who made it'.", "slips": "Assuming fork returns the same value in both \u2014 the difference is the whole point."}},
+{"id": "osp5", "topic": "os-proc", "kind": "concept", "diff": "med", "title": "Zombie process", "statement": "Terminated but unreaped.", "prompt": "A zombie process is one that:", "options": ["Is using 100% CPU", "Has terminated but whose exit status hasn't been collected by the parent (via wait)", "Has lost its parent", "Is swapped to disk"], "answer": 1, "explain": "A zombie has finished executing but lingers in the process table because its parent hasn't called wait() to read its exit status. It holds no resources except the table entry. An orphan, by contrast, is a still-running process whose parent died (re-parented to init).", "playbook": {"intuition": "Zombie = dead child waiting to be reaped. Orphan = live child whose parent died.", "slips": "Swapping zombie (terminated, unreaped) and orphan (running, parentless)."}},
+{"id": "osp6", "topic": "os-proc", "kind": "concept", "diff": "med", "title": "FCFS convoy effect", "statement": "Head-of-line blocking.", "prompt": "The 'convoy effect' that hurts FCFS scheduling is:", "options": ["Too many context switches", "One long CPU-bound job forces many short jobs to wait behind it", "Starvation of high-priority jobs", "Memory thrashing"], "answer": 1, "explain": "In FCFS, a single long job at the front makes all the short jobs queued behind it wait \u2014 like cars stuck behind one slow truck \u2014 inflating average waiting time. SJF/RR mitigate this by letting short jobs through.", "playbook": {"intuition": "One slow job at the front of FCFS jams the whole queue behind it.", "slips": "Thinking FCFS is fair on waiting time \u2014 the convoy effect makes it poor."}},
+{"id": "osp7", "topic": "os-proc", "kind": "concept", "diff": "hard", "title": "RR time quantum tradeoff", "statement": "Quantum size.", "prompt": "In Round Robin, making the time quantum very SMALL tends to:", "options": ["Reduce context-switch overhead", "Increase responsiveness but raise context-switch overhead (toward processor sharing)", "Behave like FCFS", "Cause starvation"], "answer": 1, "explain": "A tiny quantum approaches ideal fair sharing and improves responsiveness, but each switch costs time, so overhead climbs. A very large quantum degenerates toward FCFS. The quantum is tuned to be large relative to switch cost yet small enough for good response.", "playbook": {"intuition": "Small quantum: snappier but more switching tax. Large quantum: less overhead but FCFS-like.", "slips": "Picking a quantum near the context-switch time \u2014 overhead dominates useful work."}},
+{"id": "osp8", "topic": "os-proc", "kind": "concept", "diff": "hard", "title": "Turnaround and waiting time", "statement": "Scheduling metrics.", "prompt": "If a job arrives at t=0, starts at t=3, and finishes at t=10 with burst 7, its WAITING time is:", "options": ["10", "7", "3", "0"], "answer": 2, "explain": "Turnaround = completion - arrival = 10. Waiting = turnaround - burst = 10 - 7 = 3 (equivalently start - arrival here since it ran without preemption). Waiting time is the time spent in the ready queue not executing.", "playbook": {"intuition": "Waiting = turnaround - CPU burst = time spent NOT running.", "slips": "Reporting turnaround (10) when asked for waiting (3)."}},
+{"id": "osm2", "topic": "os-mem", "kind": "concept", "diff": "hard", "title": "Banker's algorithm", "statement": "Deadlock avoidance.", "prompt": "The Banker's algorithm is a deadlock-handling strategy classified as:", "options": ["Prevention", "Avoidance \u2014 it grants a request only if the system stays in a SAFE state", "Detection", "Recovery"], "answer": 1, "explain": "Banker's is deadlock AVOIDANCE: before granting a resource request it simulates the allocation and checks that a safe sequence still exists; otherwise the request waits. It needs maximum-claim knowledge up front, which limits real-world use.", "playbook": {"intuition": "Avoidance = look before you leap: only allocate if a safe sequence still exists.", "slips": "Confusing avoidance (Banker's) with prevention (break a Coffman condition structurally)."}},
+{"id": "osm3", "topic": "os-mem", "kind": "concept", "diff": "med", "title": "Paging and fragmentation", "statement": "Internal vs external.", "prompt": "Paging (fixed-size frames) eliminates EXTERNAL fragmentation but can still cause:", "options": ["External fragmentation", "Internal fragmentation (the last page is partly unused)", "No fragmentation at all", "Thrashing only"], "answer": 1, "explain": "Because memory is split into equal frames, free memory is never stranded in unusable gaps (no external fragmentation). But a process's last page is rarely full, wasting part of one frame per process \u2014 internal fragmentation. Segmentation has the opposite profile.", "playbook": {"intuition": "Fixed frames kill external fragmentation but waste the tail of the last page (internal).", "slips": "Saying paging has zero fragmentation \u2014 the final page leftover is internal fragmentation."}},
+{"id": "osm4", "topic": "os-mem", "kind": "concept", "diff": "med", "title": "TLB", "statement": "Translation cache.", "prompt": "The TLB (Translation Lookaside Buffer) speeds up:", "options": ["Disk I/O", "Virtual-to-physical address translation by caching recent page-table entries", "Context switches by saving registers", "Cache coherence"], "answer": 1, "explain": "Each memory access needs a virtual->physical translation; walking the page table every time is slow. The TLB caches recent translations so most accesses hit it. A context switch can flush the TLB (unless tagged with ASIDs), which is part of why process switches cost more than thread switches.", "playbook": {"intuition": "TLB = a fast cache of page-table lookups, so you skip the page walk on a hit.", "slips": "Forgetting TLB flushes are a hidden cost of process (address-space) switches."}},
+{"id": "osm5", "topic": "os-mem", "kind": "concept", "diff": "hard", "title": "Belady's anomaly", "statement": "FIFO page replacement.", "prompt": "Belady's anomaly \u2014 more frames causing MORE page faults \u2014 can occur with which replacement policy?", "options": ["LRU", "Optimal", "FIFO", "All of them equally"], "answer": 2, "explain": "FIFO can exhibit Belady's anomaly: adding frames sometimes increases faults because FIFO ignores usage. Stack-based algorithms like LRU and Optimal are provably immune (more frames never hurt). This is a classic reason FIFO is avoided.", "playbook": {"intuition": "FIFO can get worse with more memory (Belady). LRU/Optimal never do.", "slips": "Assuming more frames always means fewer faults \u2014 not true for FIFO."}},
+{"id": "osm6", "topic": "os-mem", "kind": "concept", "diff": "med", "title": "Thrashing", "statement": "Excessive paging.", "prompt": "Thrashing is when the system:", "options": ["Runs out of CPU", "Spends most of its time paging (servicing page faults) rather than executing", "Has too many threads", "Overflows the stack"], "answer": 1, "explain": "Thrashing happens when the combined working sets exceed physical memory, so processes constantly evict each other's needed pages \u2014 CPU utilization collapses while the disk thrashes. The fix is to reduce the multiprogramming degree (working-set / page-fault-frequency control).", "playbook": {"intuition": "Thrashing = the machine paging itself to death; throughput cratering despite a busy disk.", "slips": "Adding MORE processes when thrashing \u2014 it makes it worse; you must shed load."}},
+{"id": "osm7", "topic": "os-mem", "kind": "concept", "diff": "med", "title": "Demand paging", "statement": "Lazy loading.", "prompt": "Under demand paging, a page is brought into RAM:", "options": ["At program load, all at once", "Only when it is first referenced (on a page fault)", "Never; pages stay on disk", "Randomly by the scheduler"], "answer": 1, "explain": "Demand paging loads pages lazily \u2014 only on the first access (a page fault triggers the load). This speeds startup and avoids loading code/data that never runs, at the cost of some early faults. It is what makes virtual memory practical.", "playbook": {"intuition": "Don't load it until someone touches it \u2014 the page fault is the trigger.", "slips": "Confusing demand paging (lazy) with pre-paging (eager)."}},
+{"id": "apt2", "topic": "apt", "kind": "concept", "diff": "med", "title": "Relative speed (trains)", "statement": "Closing/opening speed.", "prompt": "Two trains travel toward each other at 60 km/h and 40 km/h, starting 200 km apart. They meet after:", "options": ["2 hours", "2.5 hours", "4 hours", "5 hours"], "answer": 0, "explain": "Approaching head-on, relative speed adds: 60+40 = 100 km/h. Time = distance / relative speed = 200/100 = 2 hours. (If they moved the same direction you'd subtract instead.)", "playbook": {"intuition": "Head-on: add speeds. Same direction: subtract. Then time = gap / relative speed.", "slips": "Using one train's speed instead of the combined closing speed."}},
+{"id": "apt3", "topic": "apt", "kind": "concept", "diff": "hard", "title": "Average speed", "statement": "Harmonic mean.", "prompt": "You drive to a town at 60 km/h and return the SAME route at 40 km/h. Average speed for the trip is:", "options": ["50 km/h", "48 km/h", "45 km/h", "52 km/h"], "answer": 1, "explain": "Average speed = total distance / total time, not the arithmetic mean. For equal distances it is the harmonic mean: 2*60*40/(60+40) = 4800/100 = 48 km/h. The slower leg takes more time, dragging the average below 50.", "playbook": {"intuition": "Equal distances \u2192 harmonic mean = 2ab/(a+b), never the simple average.", "slips": "Averaging the two speeds (50) instead of using total distance / total time."}},
+{"id": "apt4", "topic": "apt", "kind": "concept", "diff": "med", "title": "At-least-one probability", "statement": "Complement.", "prompt": "A fair coin is tossed 3 times. P(at least one head) is:", "options": ["1/8", "3/8", "7/8", "1/2"], "answer": 2, "explain": "Use the complement: P(at least one head) = 1 - P(no heads) = 1 - (1/2)^3 = 1 - 1/8 = 7/8. 'At least one' problems are almost always easiest via 1 minus the all-fail case.", "playbook": {"intuition": "'At least one' \u2192 1 - P(none). Compute the easy complementary event.", "slips": "Trying to sum the cases for exactly 1, 2, 3 heads instead of using the complement."}},
+{"id": "apt5", "topic": "apt", "kind": "concept", "diff": "med", "title": "Permutations vs combinations", "statement": "Order matters?", "prompt": "Choosing a 3-person committee from 10 people (order irrelevant) uses:", "options": ["10^3", "P(10,3) = 720", "C(10,3) = 120", "3^10"], "answer": 2, "explain": "A committee is unordered, so use combinations: C(10,3) = 10!/(3!7!) = 120. If you were assigning distinct roles (president, VP, secretary), order would matter and you'd use P(10,3)=720.", "playbook": {"intuition": "Order matters \u2192 permutations. Order doesn't \u2192 combinations (divide out the k! orderings).", "slips": "Using permutations for an unordered selection (overcounts by k!)."}},
+{"id": "apt6", "topic": "apt", "kind": "concept", "diff": "med", "title": "Successive percentage change", "statement": "Net effect.", "prompt": "A price rises 20% then falls 20%. The net change from the original is:", "options": ["0%", "-4%", "+4%", "-2%"], "answer": 1, "explain": "Multiply factors: 1.20 * 0.80 = 0.96, a 4% net DECREASE. Percentages don't cancel because the 20% drop applies to the larger, increased price. The net is always -(x^2/100)% for a +x% then -x%.", "playbook": {"intuition": "Chain the multipliers (1.2 \u00d7 0.8), don't add the percentages.", "slips": "Assuming +20% then -20% returns to the start \u2014 it loses 4%."}},
+{"id": "apt7", "topic": "apt", "kind": "concept", "diff": "med", "title": "Profit percent", "statement": "On cost price.", "prompt": "An item costing 80 is sold for 100. The profit percent is:", "options": ["20%", "25%", "18%", "16%"], "answer": 1, "explain": "Profit% is computed on COST: (100-80)/80 * 100 = 20/80 = 25%. A common trap is dividing by the selling price (which would give the margin, 20%). Cost is the base unless stated otherwise.", "playbook": {"intuition": "Profit% is gain over COST price, not selling price.", "slips": "Dividing the gain by SP instead of CP."}},
+{"id": "apt8", "topic": "apt", "kind": "concept", "diff": "hard", "title": "Pipes filling a tank", "statement": "Combined rates with a drain.", "prompt": "Pipe A fills a tank in 10 min, pipe B in 15 min. Open together, time to fill is:", "options": ["6 min", "12.5 min", "5 min", "8 min"], "answer": 0, "explain": "Rates add: 1/10 + 1/15 = 3/30 + 2/30 = 5/30 = 1/6 tank per minute. Time = 6 min. (A drain pipe would SUBTRACT its rate.) Same logic as work/time problems.", "playbook": {"intuition": "Add fill rates, subtract drain rates, then invert for time.", "slips": "Averaging the times (12.5) instead of adding rates."}},
+{"id": "apt9", "topic": "apt", "kind": "concept", "diff": "med", "title": "Ages problem", "statement": "Linear equations.", "prompt": "A father is 3x as old as his son. In 12 years he will be twice as old. The son's current age is:", "options": ["10", "12", "14", "16"], "answer": 1, "explain": "Let son = s, father = 3s. (3s+12) = 2(s+12) \u2192 3s+12 = 2s+24 \u2192 s = 12. Father is 36, in 12 years 48 = 2*24. Set up both 'now' and 'later' relations and solve.", "playbook": {"intuition": "Translate each sentence to an equation in the same unknown, then solve.", "slips": "Forgetting to add the 12 years to BOTH ages in the future condition."}},
+{"id": "apt10", "topic": "apt", "kind": "concept", "diff": "med", "title": "Number series", "statement": "Find the pattern.", "prompt": "What comes next: 2, 6, 12, 20, 30, ?", "options": ["36", "40", "42", "48"], "answer": 2, "explain": "Differences are 4, 6, 8, 10 \u2192 next difference 12, so 30+12 = 42. Equivalently the terms are n(n+1): 1\u00b72, 2\u00b73, 3\u00b74, 4\u00b75, 5\u00b76, 6\u00b77 = 42. Check the difference pattern when a series isn't an obvious ratio.", "playbook": {"intuition": "When ratios don't fit, look at the differences (and differences of differences).", "slips": "Forcing a constant ratio when the series is actually quadratic."}},
+{"id": "apt11", "topic": "apt", "kind": "concept", "diff": "hard", "title": "Clock angle", "statement": "Hands geometry.", "prompt": "The angle between the hour and minute hands at 3:00 is:", "options": ["90 degrees", "60 degrees", "75 degrees", "120 degrees"], "answer": 0, "explain": "At 3:00 the minute hand is at 12 (0 degrees) and the hour hand at 3 (90 degrees), so the angle is 90 degrees. General formula: |30*H - 5.5*M| degrees, which gives |90 - 0| = 90.", "playbook": {"intuition": "Angle = |30\u00b7hours - 5.5\u00b7minutes|. Each hour mark is 30 degrees apart.", "slips": "Forgetting the minute hand also drags the hour hand at non-o'clock times (the 5.5\u00b7M term)."}},
+{"id": "mat2", "topic": "matlab", "kind": "concept", "diff": "med", "title": "Vectorization", "statement": "Avoid explicit loops.", "prompt": "The idiomatic, fastest way to square every element of a vector v in MATLAB is:", "options": ["a for-loop element by element", "v.^2 (element-wise power, vectorized)", "v^2", "sum(v)"], "answer": 1, "explain": "MATLAB is optimized for vectorized array operations: v.^2 applies the squaring across all elements in one call, far faster than a scalar loop. Note v^2 means matrix power (only valid for square matrices), which is different.", "playbook": {"intuition": "Think in whole arrays: v.^2 not a loop. The dot makes it element-wise.", "slips": "Using v^2 (matrix power) when you meant v.^2 (element-wise)."}},
+{"id": "mat3", "topic": "matlab", "kind": "concept", "diff": "med", "title": "Logical indexing", "statement": "Mask selection.", "prompt": "<code class=\"mono\">v(v &gt; 5)</code> returns:", "options": ["The indices where v > 5", "The elements of v that are greater than 5", "A boolean vector", "An error"], "answer": 1, "explain": "v > 5 produces a logical mask, and indexing v with that mask returns the actual elements satisfying it. To get the indices instead, use find(v>5). Logical indexing is a core MATLAB idiom for filtering without loops.", "playbook": {"intuition": "A logical mask in the brackets pulls out the matching ELEMENTS; find() gives the indices.", "slips": "Expecting indices from v(v>5) \u2014 that returns values; use find() for positions."}},
+{"id": "mat4", "topic": "matlab", "kind": "concept", "diff": "easy", "title": "The end keyword", "statement": "Last index.", "prompt": "In MATLAB, <code class=\"mono\">v(end)</code> refers to:", "options": ["Element index 0", "The last element of v", "An error if v is empty only", "The number of elements"], "answer": 1, "explain": "end inside an index means the last valid index along that dimension, so v(end) is the last element and v(end-1) the second-to-last. It also works per-dimension, e.g. A(end, end) is the bottom-right element of a matrix.", "playbook": {"intuition": "end = 'the last index here'. Combine it: v(2:end), A(end,:).", "slips": "Trying v(length(v)) when v(end) is cleaner and dimension-aware."}},
+{"id": "mat5", "topic": "matlab", "kind": "concept", "diff": "med", "title": "Element-wise vs matrix ops", "statement": "The dot operators.", "prompt": "For matrices A and B of the same size, <code class=\"mono\">A.*B</code> computes:", "options": ["Matrix multiplication", "Element-wise (Hadamard) product", "The dot product", "An error"], "answer": 1, "explain": "The dot makes it element-wise: A.*B multiplies corresponding entries (same shape required). Plain A*B is true matrix multiplication (inner dimensions must agree). The same dot rule applies to ./ and .^.", "playbook": {"intuition": "Dot operators (.* ./ .^) act entry-by-entry; the un-dotted versions are linear-algebra operations.", "slips": "Using A*B (matrix mult) when you wanted entry-wise A.*B."}},
+{"id": "mat6", "topic": "matlab", "kind": "concept", "diff": "med", "title": "Preallocation", "statement": "Avoid array growth.", "prompt": "Why preallocate with <code class=\"mono\">v = zeros(1,n);</code> before a loop that fills v?", "options": ["It looks cleaner only", "Growing an array each iteration forces repeated reallocation/copying \u2014 O(n^2); preallocation makes it O(n)", "MATLAB requires it", "It changes the result"], "answer": 1, "explain": "If you grow v(i)=... without preallocating, MATLAB may reallocate and copy the whole array as it expands, giving quadratic time and an 'array grows on every loop iteration' warning. Preallocating reserves the memory once.", "playbook": {"intuition": "Reserve the full array first; appending in a loop silently reallocates and copies.", "slips": "Ignoring the 'array grows inside loop' lint \u2014 it signals accidental O(n^2)."}},
+{"id": "dlnk1", "topic": "dsa-linear", "kind": "code", "diff": "easy", "title": "Best Time to Buy and Sell Stock", "statement": "One pass, track min.", "prompt": "Given daily prices, return the max profit from one buy then one later sell. If none, return 0.", "sig": "int maxProfit(vector<int>& prices)", "starter": "class Solution {\npublic:\n    int maxProfit(vector<int>& prices) {\n        \n    }\n};", "examples": [{"in": "prices = [7,1,5,3,6,4]", "out": "5", "ex": "Buy at 1, sell at 6."}, {"in": "prices = [7,6,4,3,1]", "out": "0", "ex": "Only decreasing \u2014 no profit."}], "constraints": ["1 <= prices.length <= 1e5", "0 <= prices[i] <= 1e4"], "tests": [{"in": "prices=[7,1,5,3,6,4]", "out": "5"}, {"in": "prices=[7,6,4,3,1]", "out": "0"}, {"in": "prices=[1]", "out": "0"}, {"in": "prices=[2,4,1]", "out": "2"}], "playbook": {"intuition": "Track the lowest price seen so far; at each day the best sale today is price - minSoFar. Keep the running max of that.", "template": "int mn=INT_MAX, best=0;\nfor(int p: prices){ mn=min(mn,p); best=max(best,p-mn); }\nreturn best;", "slips": "Don't sort or use two nested loops (complexity:too-slow). One pass is enough."}},
+{"id": "dlnk2", "topic": "dsa-linear", "kind": "code", "diff": "easy", "title": "Move Zeroes", "statement": "Stable partition in place.", "prompt": "Move all 0s to the end of nums in place while keeping the relative order of non-zero elements.", "sig": "void moveZeroes(vector<int>& nums)", "starter": "class Solution {\npublic:\n    void moveZeroes(vector<int>& nums) {\n        \n    }\n};", "examples": [{"in": "nums = [0,1,0,3,12]", "out": "[1,3,12,0,0]", "ex": "Non-zeros keep order; zeros pushed back."}], "constraints": ["1 <= nums.length <= 1e4"], "tests": [{"in": "nums=[0,1,0,3,12]", "out": "[1,3,12,0,0]"}, {"in": "nums=[0]", "out": "[0]"}, {"in": "nums=[1,2,3]", "out": "[1,2,3]"}, {"in": "nums=[0,0,1]", "out": "[1,0,0]"}], "playbook": {"intuition": "Keep a write pointer for the next non-zero slot. Sweep with a read pointer; whenever you see a non-zero, swap it to the write slot and advance write.", "template": "int j=0;\nfor(int i=0;i<nums.size();i++) if(nums[i]) swap(nums[i], nums[j++]);", "slips": "Off-by-one on the write pointer; only advance it when you actually place a non-zero."}},
+{"id": "dlnk3", "topic": "dsa-linear", "kind": "code", "diff": "easy", "title": "Contains Duplicate", "statement": "Hash set membership.", "prompt": "Return true if any value appears at least twice in nums, false if all distinct.", "sig": "bool containsDuplicate(vector<int>& nums)", "starter": "class Solution {\npublic:\n    bool containsDuplicate(vector<int>& nums) {\n        \n    }\n};", "examples": [{"in": "nums = [1,2,3,1]", "out": "true", "ex": "1 repeats."}, {"in": "nums = [1,2,3,4]", "out": "false", "ex": "All unique."}], "constraints": ["1 <= nums.length <= 1e5"], "tests": [{"in": "nums=[1,2,3,1]", "out": "true"}, {"in": "nums=[1,2,3,4]", "out": "false"}, {"in": "nums=[1,1]", "out": "true"}, {"in": "nums=[7]", "out": "false"}], "playbook": {"intuition": "Insert into a hash set as you go; the first time an insert finds the value already present, you have a duplicate.", "template": "unordered_set<int> s;\nfor(int x: nums){ if(s.count(x)) return true; s.insert(x); }\nreturn false;", "slips": "unordered_set syntax: s.count(x) or s.find(x)!=s.end(). Don't compare every pair (too-slow)."}},
+{"id": "dlnk4", "topic": "dsa-linear", "kind": "code", "diff": "med", "title": "Maximum Subarray (Kadane)", "statement": "Running best.", "prompt": "Find the contiguous subarray with the largest sum and return that sum.", "sig": "int maxSubArray(vector<int>& nums)", "starter": "class Solution {\npublic:\n    int maxSubArray(vector<int>& nums) {\n        \n    }\n};", "examples": [{"in": "nums = [-2,1,-3,4,-1,2,1,-5,4]", "out": "6", "ex": "[4,-1,2,1] sums to 6."}], "constraints": ["1 <= nums.length <= 1e5", "-1e4 <= nums[i] <= 1e4"], "tests": [{"in": "nums=[-2,1,-3,4,-1,2,1,-5,4]", "out": "6"}, {"in": "nums=[1]", "out": "1"}, {"in": "nums=[-1,-2,-3]", "out": "-1"}, {"in": "nums=[5,4,-1,7,8]", "out": "23"}], "playbook": {"intuition": "At each element decide: extend the current run, or start fresh from here. cur = max(x, cur+x); track the best cur ever.", "template": "int best=nums[0], cur=nums[0];\nfor(int i=1;i<nums.size();i++){ cur=max(nums[i], cur+nums[i]); best=max(best,cur); }\nreturn best;", "slips": "Initialize best to nums[0], NOT 0 \u2014 all-negative arrays must return the largest single element."}},
+{"id": "dlnk5", "topic": "dsa-linear", "kind": "code", "diff": "easy", "title": "Valid Anagram", "statement": "Count letters.", "prompt": "Return true if string t is an anagram of string s (same letters, same counts).", "sig": "bool isAnagram(string s, string t)", "starter": "class Solution {\npublic:\n    bool isAnagram(string s, string t) {\n        \n    }\n};", "examples": [{"in": "s = \"anagram\", t = \"nagaram\"", "out": "true", "ex": "Same multiset of letters."}, {"in": "s = \"rat\", t = \"car\"", "out": "false", "ex": "Different letters."}], "constraints": ["1 <= s.length, t.length <= 5e4", "lowercase letters"], "tests": [{"in": "s=\"anagram\", t=\"nagaram\"", "out": "true"}, {"in": "s=\"rat\", t=\"car\"", "out": "false"}, {"in": "s=\"a\", t=\"a\"", "out": "true"}, {"in": "s=\"ab\", t=\"a\"", "out": "false"}], "playbook": {"intuition": "Anagrams have identical letter frequencies. Count s's letters in an int[26], decrement for t's, and check all counts are zero (lengths must match first).", "template": "if(s.size()!=t.size()) return false;\nint c[26]={0};\nfor(char ch:s) c[ch-'a']++;\nfor(char ch:t) if(--c[ch-'a']<0) return false;\nreturn true;", "slips": "Check lengths first. A count array beats sorting (O(n) vs O(n log n))."}},
+{"id": "dlnk6", "topic": "dsa-linear", "kind": "code", "diff": "easy", "title": "Single Number", "statement": "XOR cancellation.", "prompt": "Every element appears twice except one. Find the one that appears once, in O(n) time and O(1) space.", "sig": "int singleNumber(vector<int>& nums)", "starter": "class Solution {\npublic:\n    int singleNumber(vector<int>& nums) {\n        \n    }\n};", "examples": [{"in": "nums = [4,1,2,1,2]", "out": "4", "ex": "Pairs cancel, 4 remains."}], "constraints": ["each element appears twice except one"], "tests": [{"in": "nums=[4,1,2,1,2]", "out": "4"}, {"in": "nums=[2,2,1]", "out": "1"}, {"in": "nums=[1]", "out": "1"}, {"in": "nums=[7,3,7]", "out": "3"}], "playbook": {"intuition": "XOR is its own inverse: x^x=0 and x^0=x. XOR everything together and the paired values cancel, leaving the unique one.", "template": "int r=0; for(int x: nums) r^=x; return r;", "slips": "Reaching for a hash map (O(n) space) when XOR is O(1) space."}},
+{"id": "dlnk7", "topic": "dsa-linear", "kind": "code", "diff": "med", "title": "Longest Substring Without Repeating", "statement": "Sliding window.", "prompt": "Return the length of the longest substring of s containing no repeated character.", "sig": "int lengthOfLongestSubstring(string s)", "starter": "class Solution {\npublic:\n    int lengthOfLongestSubstring(string s) {\n        \n    }\n};", "examples": [{"in": "s = \"abcabcbb\"", "out": "3", "ex": "\"abc\" has length 3."}, {"in": "s = \"bbbbb\"", "out": "1", "ex": "\"b\"."}], "constraints": ["0 <= s.length <= 5e4"], "tests": [{"in": "s=\"abcabcbb\"", "out": "3"}, {"in": "s=\"bbbbb\"", "out": "1"}, {"in": "s=\"pwwkew\"", "out": "3"}, {"in": "s=\"\"", "out": "0"}], "playbook": {"intuition": "Slide a window [left,right]. Keep the last index of each char; when you hit a repeat inside the window, jump left to just past its previous position. Track the max width.", "template": "unordered_map<char,int> last; int left=0, best=0;\nfor(int r=0;r<s.size();r++){\n  if(last.count(s[r]) && last[s[r]]>=left) left=last[s[r]]+1;\n  last[s[r]]=r; best=max(best, r-left+1);\n}\nreturn best;", "slips": "Only jump left forward (never backward) \u2014 guard with last[c]>=left. Empty string returns 0."}},
+{"id": "dln-c1", "topic": "dsa-linear", "kind": "concept", "diff": "easy", "title": "Hash map average lookup", "statement": "Complexity.", "prompt": "Average-case time to look up a key in a well-distributed hash map (unordered_map) is:", "options": ["O(n)", "O(log n)", "O(1)", "O(n log n)"], "answer": 2, "explain": "With a good hash and load factor, lookups/inserts/erases are O(1) on average. Worst case degrades to O(n) under many collisions (or an adversarial hash). A std::map (red-black tree) gives guaranteed O(log n) but ordered keys.", "playbook": {"intuition": "unordered_map = O(1) average (hashing); map = O(log n) guaranteed (balanced tree).", "slips": "Quoting O(log n) for unordered_map \u2014 that's the ordered std::map."}},
+{"id": "dln-c2", "topic": "dsa-linear", "kind": "concept", "diff": "easy", "title": "LIFO vs FIFO", "statement": "Pick the structure.", "prompt": "You need to process items in last-in-first-out order. The right structure is a:", "options": ["Queue", "Stack", "Priority queue", "Deque only"], "answer": 1, "explain": "LIFO is exactly a stack (push/pop/top). FIFO (first-in-first-out) is a queue. Matching the access pattern to the structure is half of most easy interview problems (e.g. bracket matching \u2192 stack, BFS \u2192 queue).", "playbook": {"intuition": "LIFO \u2192 stack, FIFO \u2192 queue. Name the order, the structure follows.", "slips": "In C++, top()/pop() are SEPARATE; pop() returns void. Read top() first, then pop()."}},
+{"id": "dtgk1", "topic": "dsa-tg", "kind": "code", "diff": "easy", "title": "Same Tree", "statement": "Structural equality.", "prompt": "Given two binary trees as level-order arrays (null for missing), return true if they are identical in structure and values.", "sig": "bool isSameTree(TreeNode* p, TreeNode* q)", "starter": "class Solution {\npublic:\n    bool isSameTree(TreeNode* p, TreeNode* q) {\n        \n    }\n};", "examples": [{"in": "p = [1,2,3], q = [1,2,3]", "out": "true", "ex": "Identical."}, {"in": "p = [1,2], q = [1,null,2]", "out": "false", "ex": "2 is on different sides."}], "constraints": ["0 <= nodes <= 100"], "tests": [{"in": "p=[1, 2, 3], q=[1, 2, 3]", "out": "true"}, {"in": "p=[1, 2], q=[1, null, 2]", "out": "false"}, {"in": "p=[], q=[]", "out": "true"}, {"in": "p=[1], q=[2]", "out": "false"}], "playbook": {"intuition": "Two trees are equal iff their roots match AND their left subtrees match AND their right subtrees match \u2014 recurse. Base case: both null is true; one null is false.", "template": "if(!p && !q) return true;\nif(!p || !q || p->val!=q->val) return false;\nreturn isSameTree(p->left,q->left) && isSameTree(p->right,q->right);", "slips": "Handle the both-null base case first (edge:null), then the one-null mismatch."}},
+{"id": "dtgk2", "topic": "dsa-tg", "kind": "code", "diff": "med", "title": "Symmetric Tree", "statement": "Mirror check.", "prompt": "Return true if a binary tree is a mirror of itself around its center.", "sig": "bool isSymmetric(TreeNode* root)", "starter": "class Solution {\npublic:\n    bool isSymmetric(TreeNode* root) {\n        \n    }\n};", "examples": [{"in": "root = [1,2,2,3,4,4,3]", "out": "true", "ex": "Left mirrors right."}, {"in": "root = [1,2,2,null,3,null,3]", "out": "false", "ex": "Not mirrored."}], "constraints": ["0 <= nodes <= 1000"], "tests": [{"in": "root=[1, 2, 2, 3, 4, 4, 3]", "out": "true"}, {"in": "root=[1, 2, 2, null, 3, null, 3]", "out": "false"}, {"in": "root=[1]", "out": "true"}, {"in": "root=[]", "out": "true"}], "playbook": {"intuition": "Symmetry compares the LEFT subtree against the RIGHT subtree as mirror images: left.left vs right.right, and left.right vs right.left. Write a helper mirror(a,b).", "template": "bool mir(TreeNode*a,TreeNode*b){\n  if(!a&&!b) return true;\n  if(!a||!b||a->val!=b->val) return false;\n  return mir(a->left,b->right)&&mir(a->right,b->left);\n}\n// return root? mir(root->left,root->right) : true;", "slips": "The cross-comparison (a->left vs b->right) is the crux; comparing same sides checks equality, not mirror."}},
+{"id": "dtgk3", "topic": "dsa-tg", "kind": "code", "diff": "easy", "title": "Path Sum", "statement": "Root-to-leaf sum.", "prompt": "Return true if the tree has a root-to-leaf path whose node values add up to targetSum.", "sig": "bool hasPathSum(TreeNode* root, int targetSum)", "starter": "class Solution {\npublic:\n    bool hasPathSum(TreeNode* root, int targetSum) {\n        \n    }\n};", "examples": [{"in": "root = [1,2,3], targetSum = 4", "out": "true", "ex": "1->3 = 4."}, {"in": "root = [1,2,3], targetSum = 5", "out": "false", "ex": "No path sums to 5."}], "constraints": ["0 <= nodes <= 5000"], "tests": [{"in": "root=[1, 2, 3], targetSum=4", "out": "true"}, {"in": "root=[1, 2, 3], targetSum=5", "out": "false"}, {"in": "root=[], targetSum=0", "out": "false"}, {"in": "root=[1, 2], targetSum=3", "out": "true"}], "playbook": {"intuition": "Subtract the current node from the remaining target as you descend. At a LEAF (no children), success means the remainder is exactly zero.", "template": "if(!root) return false;\ntargetSum -= root->val;\nif(!root->left && !root->right) return targetSum==0;\nreturn hasPathSum(root->left,targetSum) || hasPathSum(root->right,targetSum);", "slips": "The check must be at a LEAF, not any node hitting zero. Empty tree returns false."}},
+{"id": "dtgk4", "topic": "dsa-tg", "kind": "code", "diff": "med", "title": "Number of Islands", "statement": "Grid DFS flood fill.", "prompt": "Given a grid of '1' (land) and '0' (water), count islands. Cells connect 4-directionally.", "sig": "int numIslands(vector<vector<char>>& grid)", "starter": "class Solution {\npublic:\n    int numIslands(vector<vector<char>>& grid) {\n        \n    }\n};", "examples": [{"in": "grid = [[1,1,0],[0,1,0],[0,0,1]]", "out": "2", "ex": "One connected blob plus a lone cell."}], "constraints": ["1 <= rows, cols <= 300", "grid[i][j] is '0' or '1'"], "tests": [{"in": "grid=[[\"1\",\"1\",\"0\"],[\"0\",\"1\",\"0\"],[\"0\",\"0\",\"1\"]]", "out": "2"}, {"in": "grid=[[\"1\",\"1\",\"1\"],[\"1\",\"1\",\"1\"]]", "out": "1"}, {"in": "grid=[[\"0\",\"0\"],[\"0\",\"0\"]]", "out": "0"}, {"in": "grid=[[\"1\"]]", "out": "1"}], "playbook": {"intuition": "Scan the grid; each time you find an unvisited '1', that's a new island \u2014 then flood-fill (DFS/BFS) to sink all its connected land so you don't recount it.", "template": "void sink(grid,i,j){ if(out of bounds || grid[i][j]!='1') return;\n  grid[i][j]='0';\n  sink(i+1,j);sink(i-1,j);sink(i,j+1);sink(i,j-1); }\n// count++ each fresh '1', then sink(i,j)", "slips": "Mark cells visited (set to '0') as you go, or you'll recount and possibly infinite-loop (edge:bounds on the 4 checks)."}},
+{"id": "dtg-c1", "topic": "dsa-tg", "kind": "concept", "diff": "easy", "title": "BFS vs DFS structure", "statement": "Frontier data structure.", "prompt": "Breadth-first search explores a graph using a ___ ; depth-first uses a ___.", "options": ["stack ; queue", "queue ; stack (or recursion)", "heap ; queue", "queue ; heap"], "answer": 1, "explain": "BFS uses a FIFO queue to expand the nearest frontier first (great for shortest path in unweighted graphs). DFS uses a stack \u2014 explicit, or implicitly via recursion \u2014 to plunge deep before backtracking.", "playbook": {"intuition": "BFS = queue (level by level). DFS = stack/recursion (go deep, backtrack).", "slips": "Swapping them: a stack gives DFS order, a queue gives BFS order."}},
+{"id": "dtg-c2", "topic": "dsa-tg", "kind": "concept", "diff": "med", "title": "BST inorder traversal", "statement": "Sorted output.", "prompt": "An in-order traversal (left, node, right) of a valid Binary Search Tree visits values in:", "options": ["Reverse sorted order", "Sorted ascending order", "Level order", "Random order"], "answer": 1, "explain": "Because every left subtree is smaller and every right subtree larger, in-order traversal of a BST yields values in ascending sorted order. This is a frequent trick: validate a BST or find the k-th smallest via in-order.", "playbook": {"intuition": "Inorder of a BST = sorted ascending. Reverse inorder = descending.", "slips": "Mixing up traversal orders: pre/in/post differ only in WHEN you visit the node relative to its subtrees."}},
+{"id": "dtg-c3", "topic": "dsa-tg", "kind": "concept", "diff": "med", "title": "Topological sort precondition", "statement": "DAG required.", "prompt": "A topological ordering of a directed graph exists if and only if the graph:", "options": ["Is connected", "Has no directed cycle (is a DAG)", "Is a tree", "Has weighted edges"], "answer": 1, "explain": "Topological sort orders nodes so every edge points forward; that's possible exactly when there's no directed cycle (a DAG). A cycle creates a contradiction (each node would need to come before itself). Kahn's algorithm detects cycles when fewer than n nodes get ordered.", "playbook": {"intuition": "Topo sort needs a DAG. A cycle = no valid linear order.", "slips": "Trying to topo-sort a graph with a cycle and not detecting the leftover nodes."}},
+{"id": "dadk1", "topic": "dsa-adv", "kind": "code", "diff": "easy", "title": "Climbing Stairs", "statement": "Fibonacci DP.", "prompt": "You climb n stairs taking 1 or 2 steps at a time. Return the number of distinct ways to reach the top.", "sig": "int climbStairs(int n)", "starter": "class Solution {\npublic:\n    int climbStairs(int n) {\n        \n    }\n};", "examples": [{"in": "n = 3", "out": "3", "ex": "1+1+1, 1+2, 2+1."}, {"in": "n = 2", "out": "2", "ex": "1+1, 2."}], "constraints": ["1 <= n <= 45"], "tests": [{"in": "n=2", "out": "2"}, {"in": "n=3", "out": "3"}, {"in": "n=1", "out": "1"}, {"in": "n=10", "out": "89"}], "playbook": {"intuition": "Ways to reach step n = ways to reach n-1 (then a 1-step) + ways to reach n-2 (then a 2-step). That's Fibonacci. Track the last two values.", "template": "int a=1,b=2; if(n<=2) return n;\nfor(int i=3;i<=n;i++){ int c=a+b; a=b; b=c; }\nreturn b;", "slips": "Base cases n=1->1, n=2->2. Use long long if n grew large enough to overflow (here it doesn't)."}},
+{"id": "dadk2", "topic": "dsa-adv", "kind": "code", "diff": "med", "title": "House Robber", "statement": "Non-adjacent max sum.", "prompt": "Given house values, return the max you can rob without taking two adjacent houses.", "sig": "int rob(vector<int>& nums)", "starter": "class Solution {\npublic:\n    int rob(vector<int>& nums) {\n        \n    }\n};", "examples": [{"in": "nums = [1,2,3,1]", "out": "4", "ex": "Rob houses 1 and 3 (1+3=4)."}, {"in": "nums = [2,7,9,3,1]", "out": "12", "ex": "2+9+1."}], "constraints": ["1 <= nums.length <= 100", "0 <= nums[i] <= 400"], "tests": [{"in": "nums=[1,2,3,1]", "out": "4"}, {"in": "nums=[2,7,9,3,1]", "out": "12"}, {"in": "nums=[5]", "out": "5"}, {"in": "nums=[2,1,1,2]", "out": "4"}], "playbook": {"intuition": "At each house choose: rob it (value + best up to two back) or skip it (best up to one back). Carry two running totals.", "template": "int take=0, skip=0;\nfor(int x: nums){ int nt=skip+x; skip=max(skip,take); take=nt; }\nreturn max(take,skip);", "slips": "Don't just take alternating houses \u2014 [2,1,1,2] needs houses 0 and 3, not 0 and 2."}},
+{"id": "dadk3", "topic": "dsa-adv", "kind": "code", "diff": "med", "title": "Coin Change", "statement": "Min coins DP.", "prompt": "Given coin denominations and an amount, return the fewest coins to make that amount, or -1 if impossible.", "sig": "int coinChange(vector<int>& coins, int amount)", "starter": "class Solution {\npublic:\n    int coinChange(vector<int>& coins, int amount) {\n        \n    }\n};", "examples": [{"in": "coins = [1,2,5], amount = 11", "out": "3", "ex": "5+5+1."}, {"in": "coins = [2], amount = 3", "out": "-1", "ex": "Cannot make 3."}], "constraints": ["1 <= coins.length <= 12", "0 <= amount <= 1e4"], "tests": [{"in": "coins=[1,2,5], amount=11", "out": "3"}, {"in": "coins=[2], amount=3", "out": "-1"}, {"in": "coins=[1], amount=0", "out": "0"}, {"in": "coins=[2,5], amount=8", "out": "4"}], "playbook": {"intuition": "dp[a] = fewest coins to make amount a. Build up from 0: dp[a] = 1 + min over coins c of dp[a-c]. Unreachable stays at infinity.", "template": "vector<int> dp(amount+1, amount+1); dp[0]=0;\nfor(int a=1;a<=amount;a++)\n  for(int c: coins) if(c<=a) dp[a]=min(dp[a], dp[a-c]+1);\nreturn dp[amount]>amount ? -1 : dp[amount];", "slips": "Greedy (largest coin first) is WRONG in general \u2014 must DP. Return -1 when amount stays unreachable."}},
+{"id": "dadk4", "topic": "dsa-adv", "kind": "code", "diff": "easy", "title": "Search Insert Position", "statement": "Binary search boundary.", "prompt": "Given a sorted distinct array and a target, return the index if found, else the index where it would be inserted to keep order.", "sig": "int searchInsert(vector<int>& nums, int target)", "starter": "class Solution {\npublic:\n    int searchInsert(vector<int>& nums, int target) {\n        \n    }\n};", "examples": [{"in": "nums = [1,3,5,6], target = 5", "out": "2", "ex": "Found at index 2."}, {"in": "nums = [1,3,5,6], target = 2", "out": "1", "ex": "Insert before 3."}], "constraints": ["1 <= nums.length <= 1e4", "sorted ascending, distinct"], "tests": [{"in": "nums=[1,3,5,6], target=5", "out": "2"}, {"in": "nums=[1,3,5,6], target=2", "out": "1"}, {"in": "nums=[1,3,5,6], target=7", "out": "4"}, {"in": "nums=[1,3,5,6], target=0", "out": "0"}], "playbook": {"intuition": "This is 'lower bound': find the first index whose value is >= target. Use a half-open [lo,hi) window so the insert point at the end falls out naturally.", "template": "int lo=0, hi=nums.size();\nwhile(lo<hi){ int mid=lo+(hi-lo)/2;\n  if(nums[mid]<target) lo=mid+1; else hi=mid; }\nreturn lo;", "slips": "Watch the boundary: hi=nums.size() (not size()-1) and the loop is lo<hi for lower-bound (off-by-one)."}},
+{"id": "dadk5", "topic": "dsa-adv", "kind": "code", "diff": "med", "title": "Unique Paths", "statement": "Grid DP.", "prompt": "A robot at the top-left of an m x n grid moves only right or down. Return the number of unique paths to the bottom-right.", "sig": "int uniquePaths(int m, int n)", "starter": "class Solution {\npublic:\n    int uniquePaths(int m, int n) {\n        \n    }\n};", "examples": [{"in": "m = 3, n = 7", "out": "28", "ex": "Classic combinatorial grid count."}, {"in": "m = 3, n = 2", "out": "3", "ex": "Three ways down a 3x2 grid."}], "constraints": ["1 <= m, n <= 100"], "tests": [{"in": "m=3, n=7", "out": "28"}, {"in": "m=3, n=2", "out": "3"}, {"in": "m=1, n=1", "out": "1"}, {"in": "m=2, n=2", "out": "2"}], "playbook": {"intuition": "Paths to a cell = paths from above + paths from the left (only two ways in). The top row and left column are all 1. Roll a single row to save space.", "template": "vector<int> dp(n,1);\nfor(int i=1;i<m;i++)\n  for(int j=1;j<n;j++) dp[j]+=dp[j-1];\nreturn dp[n-1];", "slips": "Edges (row 0, col 0) are exactly 1 path. Large m,n can overflow int \u2014 but here it fits."}},
+{"id": "dadk6", "topic": "dsa-adv", "kind": "code", "diff": "med", "title": "Jump Game", "statement": "Greedy reachability.", "prompt": "Each nums[i] is the max jump length from index i. Return true if you can reach the last index from index 0.", "sig": "bool canJump(vector<int>& nums)", "starter": "class Solution {\npublic:\n    bool canJump(vector<int>& nums) {\n        \n    }\n};", "examples": [{"in": "nums = [2,3,1,1,4]", "out": "true", "ex": "0->1->4."}, {"in": "nums = [3,2,1,0,4]", "out": "false", "ex": "Stuck at the 0."}], "constraints": ["1 <= nums.length <= 1e4", "0 <= nums[i] <= 1e5"], "tests": [{"in": "nums=[2,3,1,1,4]", "out": "true"}, {"in": "nums=[3,2,1,0,4]", "out": "false"}, {"in": "nums=[0]", "out": "true"}, {"in": "nums=[2,0,0]", "out": "true"}], "playbook": {"intuition": "Track the farthest index reachable so far. Sweep left to right; if you ever stand on an index beyond that reach, you're stuck. Update reach = max(reach, i+nums[i]).", "template": "int reach=0;\nfor(int i=0;i<nums.size();i++){ if(i>reach) return false; reach=max(reach,i+nums[i]); }\nreturn true;", "slips": "Greedy on the running max reach beats DP here. Single-element array is trivially true."}},
+{"id": "dad-c1", "topic": "dsa-adv", "kind": "concept", "diff": "easy", "title": "Binary search complexity", "statement": "Halving.", "prompt": "Binary search on a sorted array of n elements runs in:", "options": ["O(n)", "O(log n)", "O(n log n)", "O(1)"], "answer": 1, "explain": "Each comparison discards half the remaining range, so the number of steps is log2(n). The prerequisite is a sorted (or otherwise monotonic) structure \u2014 that monotonicity is what lets you throw away a half safely.", "playbook": {"intuition": "Halving each step \u2192 log n. The catch is you need sorted/monotonic data.", "slips": "mid=(lo+hi)/2 can overflow; use lo+(hi-lo)/2. And mind lo<=hi vs lo<hi."}},
+{"id": "dad-c2", "topic": "dsa-adv", "kind": "concept", "diff": "med", "title": "Min-heap root", "statement": "Priority queue.", "prompt": "In a min-heap, the element at the root is always the:", "options": ["Largest element", "Smallest element", "Median", "Most recently inserted"], "answer": 1, "explain": "A min-heap maintains the heap property that each parent <= its children, so the global minimum sits at the root and is retrievable in O(1); insert and extract-min are O(log n). C++ priority_queue is a MAX-heap by default \u2014 pass greater<> for a min-heap.", "playbook": {"intuition": "Min-heap root = current minimum (O(1) peek). C++ priority_queue defaults to MAX-heap.", "slips": "Forgetting std::priority_queue is a max-heap unless you specify greater<int>."}},
+{"id": "lnx1", "topic": "linux", "kind": "concept", "diff": "easy", "title": "chmod 755", "statement": "Octal permission bits.", "prompt": "After <code class=\"mono\">chmod 755 script.sh</code>, the permission string is:", "options": ["rwxrwxrwx", "rwxr-xr-x", "rw-r--r--", "rwxr--r--"], "answer": 1, "explain": "Each octal digit is a sum of r=4, w=2, x=1 for owner/group/other. 7=rwx, 5=r-x, 5=r-x \u2192 rwxr-xr-x: owner can read/write/execute; group and others can read/execute only.", "playbook": {"intuition": "Read each digit as r(4)+w(2)+x(1). 7=rwx, 6=rw-, 5=r-x, 4=r--.", "slips": "Mixing up the digit order \u2014 first digit is OWNER, then group, then other."}},
+{"id": "lnx2", "topic": "linux", "kind": "concept", "diff": "easy", "title": "Owner-only read/write", "statement": "Reverse the octal.", "prompt": "Which command gives ONLY the owner read+write, and nothing to group/others?", "options": ["chmod 644 f", "chmod 600 f", "chmod 700 f", "chmod 660 f"], "answer": 1, "explain": "Owner rw = 6 (4+2), group 0, other 0 \u2192 chmod 600 f (rw-------). 700 would add execute; 644 gives group/other read; 660 gives the group rw too.", "playbook": {"intuition": "rw for owner only = 6,0,0. Add nothing for group/other.", "slips": "644 leaks read to everyone; 600 is the private-file setting."}},
+{"id": "lnx3", "topic": "linux", "kind": "concept", "diff": "med", "title": "Symbolic to octal", "statement": "Compute the number.", "prompt": "The permission string <code class=\"mono\">-rw-r--r--</code> corresponds to which chmod octal?", "options": ["755", "644", "640", "664"], "answer": 1, "explain": "Ignore the leading type char. rw-=6, r--=4, r--=4 \u2192 644. This is the default for a newly created regular file under a typical umask 022.", "playbook": {"intuition": "Drop the first char (file type), then convert each rwx triad to a digit.", "slips": "Counting the leading '-' (file type) as a permission bit."}},
+{"id": "lnx4", "topic": "linux", "kind": "concept", "diff": "easy", "title": "chmod +x", "statement": "Making a file executable.", "prompt": "<code class=\"mono\">chmod +x deploy.sh</code> does what?", "options": ["Deletes the file", "Grants execute permission so the file can be run", "Makes it read-only", "Changes the owner"], "answer": 1, "explain": "+x adds the execute bit (for user/group/other, subject to umask), which is what lets you run ./deploy.sh directly. Without it you'd have to invoke the interpreter explicitly (e.g. bash deploy.sh).", "playbook": {"intuition": "+x = 'allow running this'. Symbolic mode adds/removes bits without touching the others.", "slips": "Forgetting +x is why './script.sh' gives 'Permission denied'."}},
+{"id": "lnx5", "topic": "linux", "kind": "concept", "diff": "med", "title": "Hard vs symbolic link", "statement": "ln vs ln -s.", "prompt": "Which statement about links is correct?", "options": ["A hard link stores a path; a symlink shares an inode", "A symbolic link stores a path (can cross filesystems, breaks if the target is deleted); a hard link shares the target's inode", "Both share the same inode", "Symlinks cannot point to directories"], "answer": 1, "explain": "ln makes a hard link \u2014 a second directory entry pointing at the SAME inode, so the data survives until all links are removed and it can't cross filesystems. ln -s makes a symbolic link \u2014 a small file holding a PATH; it can span filesystems and dangles if the target is deleted.", "playbook": {"intuition": "Hard link = another name for the same inode. Symlink = a signpost holding a path.", "slips": "Assuming deleting the original file breaks a hard link \u2014 it doesn't; the inode lives on."}},
+{"id": "lnx6", "topic": "linux", "kind": "concept", "diff": "easy", "title": "chown", "statement": "Change ownership.", "prompt": "<code class=\"mono\">chown alice:dev report.txt</code> sets the file's:", "options": ["Permissions to rwx", "Owner to alice and group to dev", "Name to alice", "Access time"], "answer": 1, "explain": "chown user:group sets both the owning user and group in one call. Use chgrp for group-only, or chown :dev to change just the group. Changing ownership usually requires root.", "playbook": {"intuition": "chown user:group \u2014 left of the colon is user, right is group.", "slips": "chown vs chmod: chown changes WHO owns it, chmod changes WHAT they can do."}},
+{"id": "lnx7", "topic": "linux", "kind": "concept", "diff": "easy", "title": "grep -v", "statement": "Invert match.", "prompt": "<code class=\"mono\">grep -v ERROR log.txt</code> prints:", "options": ["Only lines containing ERROR", "Lines that do NOT contain ERROR", "A count of ERROR lines", "ERROR in red"], "answer": 1, "explain": "-v inverts the match, printing every line that does NOT contain the pattern. Handy for filtering out noise. Other common flags: -i (ignore case), -c (count), -r (recursive), -n (line numbers), -w (whole word).", "playbook": {"intuition": "-v = 'everything except'. Great for stripping known noise from logs.", "slips": "Confusing -v (invert) with -c (count) or -i (ignore case)."}},
+{"id": "lnx8", "topic": "linux", "kind": "concept", "diff": "easy", "title": "grep -c", "statement": "Count matches.", "prompt": "<code class=\"mono\">grep -c warn app.log</code> outputs:", "options": ["Every matching line", "The number of lines containing warn", "The first match", "Nothing"], "answer": 1, "explain": "-c prints the count of MATCHING LINES (not total occurrences \u2014 a line with two 'warn's counts once). To count occurrences you'd use grep -o warn | wc -l.", "playbook": {"intuition": "-c counts matching LINES, not total hits on a line.", "slips": "Expecting -c to count multiple matches on the same line \u2014 it counts the line once."}},
+{"id": "lnx9", "topic": "linux", "kind": "concept", "diff": "med", "title": "awk fields", "statement": "Column extraction.", "prompt": "<code class=\"mono\">awk '{print $3}' data.txt</code> prints:", "options": ["The 3 first lines", "The third whitespace-separated field of each line", "3 random columns", "The file thrice"], "answer": 1, "explain": "awk splits each line into fields $1, $2, ... by whitespace (default). $3 is the third column; $0 is the whole line; NF is the field count, so $NF is the last field. It's the go-to for column slicing in OAs.", "playbook": {"intuition": "$1..$NF are columns; $0 is the whole line; $NF is the last field.", "slips": "Off-by-one: fields are 1-indexed, and $0 means the entire line."}},
+{"id": "lnx10", "topic": "linux", "kind": "concept", "diff": "med", "title": "sed substitution", "statement": "Global replace.", "prompt": "<code class=\"mono\">sed 's/foo/bar/g' f.txt</code> does what?", "options": ["Deletes foo", "Replaces the FIRST foo per line with bar", "Replaces ALL foo with bar on every line", "Prints only foo lines"], "answer": 2, "explain": "s/foo/bar/ substitutes; the trailing g makes it global (every occurrence on a line, not just the first). Without g, only the first match per line is replaced. By default sed prints to stdout and doesn't edit the file unless you add -i.", "playbook": {"intuition": "s/old/new/g \u2014 the g means 'every match on the line', not just the first.", "slips": "Dropping g and only replacing the first hit per line; forgetting -i to edit in place."}},
+{"id": "lnx11", "topic": "linux", "kind": "concept", "diff": "easy", "title": "wc -l", "statement": "Line count.", "prompt": "<code class=\"mono\">wc -l names.txt</code> reports:", "options": ["Word count", "Number of lines", "Byte size", "Longest line"], "answer": 1, "explain": "-l counts lines (technically newline characters). -w counts words, -c counts bytes, -m counts characters. A classic idiom: ls | wc -l to count entries in a directory.", "playbook": {"intuition": "wc -l lines, -w words, -c bytes.", "slips": "wc -l counts newlines \u2014 a final line with no trailing newline may be undercounted."}},
+{"id": "lnx12", "topic": "linux", "kind": "concept", "diff": "med", "title": "sort | uniq", "statement": "Deduplication.", "prompt": "Why is <code class=\"mono\">sort f.txt | uniq</code> used instead of just <code class=\"mono\">uniq f.txt</code>?", "options": ["uniq is deprecated", "uniq only collapses ADJACENT duplicate lines, so input must be sorted first", "sort removes duplicates by itself", "They are identical"], "answer": 1, "explain": "uniq removes only consecutive duplicate lines, so non-adjacent duplicates survive unless the input is sorted first. uniq -c prefixes counts; uniq -d shows only duplicated lines. (sort -u does sort+dedupe in one step.)", "playbook": {"intuition": "uniq needs sorted input \u2014 it only merges NEIGHBORING duplicates.", "slips": "Running uniq on unsorted data and missing scattered duplicates."}},
+{"id": "lnx13", "topic": "linux", "kind": "concept", "diff": "easy", "title": "Pipes", "statement": "Chaining commands.", "prompt": "In <code class=\"mono\">ps aux | grep python</code>, the pipe <code class=\"mono\">|</code>:", "options": ["Runs both in parallel unrelated", "Feeds the stdout of ps into the stdin of grep", "Writes ps output to a file", "Comments out grep"], "answer": 1, "explain": "A pipe connects the standard output of the left command to the standard input of the right command, so grep filters ps's output. Pipes chain arbitrarily: cmd1 | cmd2 | cmd3.", "playbook": {"intuition": "| = 'send my output as the next command's input'. Build filters left to right.", "slips": "Confusing | (connect stdout\u2192stdin) with > (write stdout to a file)."}},
+{"id": "lnx14", "topic": "linux", "kind": "concept", "diff": "easy", "title": "> vs >>", "statement": "Overwrite vs append.", "prompt": "The difference between <code class=\"mono\">echo hi &gt; f</code> and <code class=\"mono\">echo hi &gt;&gt; f</code> is:", "options": ["No difference", "&gt; overwrites (truncates) the file; &gt;&gt; appends to it", "&gt;&gt; overwrites; &gt; appends", "Both delete the file"], "answer": 1, "explain": "> redirects stdout to the file, truncating it first (creating it if absent). >> appends without truncating. A frequent OA gotcha: > silently wipes an existing file.", "playbook": {"intuition": "> truncates then writes; >> adds to the end. One > = danger to existing content.", "slips": "Using > when you meant >> and clobbering the file."}},
+{"id": "lnx15", "topic": "linux", "kind": "concept", "diff": "hard", "title": "2>&1", "statement": "Redirecting stderr.", "prompt": "<code class=\"mono\">./run &gt; out.log 2&gt;&amp;1</code> means:", "options": ["Send stdout and stderr both to out.log", "Send stdout to out.log, discard stderr", "Send stderr to the screen only", "Run twice"], "answer": 0, "explain": "> out.log points stdout (fd 1) at the file; 2>&1 then points stderr (fd 2) at wherever fd 1 currently goes \u2014 the file. So both streams land in out.log. Order matters: '2>&1 > out.log' would NOT capture stderr in the file.", "playbook": {"intuition": "2>&1 = 'stderr, go where stdout is now going'. Put it AFTER the stdout redirect.", "slips": "Writing '2>&1 > file' \u2014 stderr still goes to the terminal because the order is wrong."}},
+{"id": "lnx16", "topic": "linux", "kind": "concept", "diff": "med", "title": "/dev/null", "statement": "Discarding output.", "prompt": "<code class=\"mono\">command 2&gt; /dev/null</code> does what?", "options": ["Logs errors to a file", "Discards the command's error output (stderr)", "Silences stdout", "Runs in the background"], "answer": 1, "explain": "/dev/null is the bit bucket \u2014 anything written to it is discarded. 2> /dev/null throws away stderr (e.g. to hide 'permission denied' noise from find). Use > /dev/null 2>&1 to silence everything.", "playbook": {"intuition": "/dev/null swallows whatever you redirect into it. 2> targets stderr.", "slips": "2> silences stderr only; add >/dev/null (or 2>&1) to also drop stdout."}},
+{"id": "lnx17", "topic": "linux", "kind": "concept", "diff": "med", "title": "kill -9", "statement": "SIGKILL.", "prompt": "<code class=\"mono\">kill -9 4321</code> sends which signal, and what is special about it?", "options": ["SIGTERM; the process cleans up first", "SIGKILL; it cannot be caught or ignored \u2014 forced termination", "SIGSTOP; it pauses the process", "SIGHUP; it reloads config"], "answer": 1, "explain": "-9 is SIGKILL: the kernel terminates the process immediately; it cannot be trapped, blocked, or ignored, so no cleanup runs. Plain kill sends SIGTERM (15), which a process CAN catch to shut down gracefully \u2014 try that first.", "playbook": {"intuition": "SIGTERM (15) asks nicely; SIGKILL (9) is unstoppable but skips cleanup.", "slips": "Reaching for kill -9 first \u2014 SIGTERM lets the process flush/clean up."}},
+{"id": "lnx18", "topic": "linux", "kind": "concept", "diff": "med", "title": "Ctrl+C signal", "statement": "SIGINT.", "prompt": "Pressing Ctrl+C in a foreground program sends which signal?", "options": ["SIGKILL (9)", "SIGINT (2)", "SIGSTOP (19)", "SIGTERM (15)"], "answer": 1, "explain": "Ctrl+C sends SIGINT (2), an interrupt the program can catch to exit cleanly. Ctrl+Z sends SIGTSTP (suspend, job control), and Ctrl+\\ sends SIGQUIT. SIGKILL/SIGSTOP are the two signals that can't be caught.", "playbook": {"intuition": "Ctrl+C=SIGINT (catchable), Ctrl+Z=SIGTSTP (suspend). Uncatchable: SIGKILL, SIGSTOP.", "slips": "Assuming Ctrl+C force-kills \u2014 SIGINT can be handled or ignored."}},
+{"id": "lnx19", "topic": "linux", "kind": "concept", "diff": "easy", "title": "ps aux", "statement": "Listing processes.", "prompt": "<code class=\"mono\">ps aux</code> is commonly used to:", "options": ["List files", "Show all running processes (all users) with CPU/memory usage", "Show disk usage", "Kill a process"], "answer": 1, "explain": "ps aux lists every process for all users (a=all with tty, x=include those without a controlling tty, u=user-oriented columns like %CPU/%MEM). Pipe into grep to find one: ps aux | grep nginx. top/htop give a live view.", "playbook": {"intuition": "ps aux = a snapshot of every process + resource columns. top = the live version.", "slips": "ps aux is a one-time snapshot; use top/htop for a continuously updating view."}},
+{"id": "lnx20", "topic": "linux", "kind": "concept", "diff": "med", "title": "Background jobs", "statement": "& and job control.", "prompt": "Appending <code class=\"mono\">&amp;</code> to a command, e.g. <code class=\"mono\">./build.sh &amp;</code>, does what?", "options": ["Runs it as root", "Runs it in the background so the shell stays free", "Runs it twice", "Redirects output"], "answer": 1, "explain": "A trailing & runs the command in the background and returns the prompt immediately; jobs lists background jobs, fg brings one to the foreground, bg resumes a stopped one. Use nohup ... & (or disown) to keep it alive after logout.", "playbook": {"intuition": "& = 'run this in the background, give me my prompt back'. Manage with jobs/fg/bg.", "slips": "A backgrounded job dies on shell exit unless you use nohup/disown."}},
+{"id": "lnx21", "topic": "linux", "kind": "concept", "diff": "med", "title": "find files", "statement": "Searching a tree.", "prompt": "<code class=\"mono\">find . -type f -name \"*.log\"</code> does what?", "options": ["Lists directories named log", "Recursively finds regular files ending in .log under the current dir", "Deletes .log files", "Searches inside file contents"], "answer": 1, "explain": "find walks the directory tree from '.'; -type f restricts to regular files, -name \"*.log\" matches the name pattern (quote it so the shell doesn't expand *). Add -type d for directories, or -delete / -exec to act on matches.", "playbook": {"intuition": "find <where> -type f -name PATTERN \u2014 walks the tree; quote the glob.", "slips": "Forgetting quotes around *.log lets the shell expand it before find sees it."}},
+{"id": "lnx22", "topic": "linux", "kind": "concept", "diff": "hard", "title": "find | xargs", "statement": "Batch actions.", "prompt": "<code class=\"mono\">find . -name \"*.tmp\" | xargs rm</code> accomplishes what?", "options": ["Renames .tmp files", "Passes the found filenames as arguments to rm, deleting them", "Counts .tmp files", "Moves them to /tmp"], "answer": 1, "explain": "xargs reads items from stdin and builds them into arguments for the given command \u2014 here rm \u2014 so all matched files are deleted in batched calls. Safer form for spaces/newlines: find . -name '*.tmp' -print0 | xargs -0 rm (or find ... -delete).", "playbook": {"intuition": "xargs turns a stream of lines into command arguments. Use -print0/-0 for weird filenames.", "slips": "Plain xargs breaks on filenames with spaces; use -print0 | xargs -0."}},
+{"id": "lnx23", "topic": "linux", "kind": "concept", "diff": "med", "title": "Exit status $?", "statement": "Success codes.", "prompt": "Immediately after a command, <code class=\"mono\">echo $?</code> prints 0. That means:", "options": ["The command failed", "The command succeeded (exit status 0 = success)", "0 files matched", "The PID is 0"], "answer": 1, "explain": "$? holds the exit status of the last command. By convention 0 means success and any non-zero value signals an error (each program defines its own codes). Scripts branch on this: if grep -q foo f; then ... .", "playbook": {"intuition": "$? = last exit code. 0 is success; non-zero is failure. (Opposite of boolean true=1.)", "slips": "Treating non-zero as success \u2014 in shell, 0 is the good case."}},
+{"id": "lnx24", "topic": "linux", "kind": "concept", "diff": "hard", "title": "&& vs ||", "statement": "Conditional chaining.", "prompt": "In <code class=\"mono\">make &amp;&amp; ./run</code>, when does <code class=\"mono\">./run</code> execute?", "options": ["Always", "Only if make succeeds (exit 0)", "Only if make fails", "Never"], "answer": 1, "explain": "&& runs the right side only if the left side succeeded (exit 0). Its complement || runs the right side only if the left FAILED (e.g. cmd || echo failed). A plain ; runs the next command unconditionally.", "playbook": {"intuition": "A && B: B runs on A's success. A || B: B runs on A's failure. A ; B: always.", "slips": "Confusing && (on success) with || (on failure)."}},
+{"id": "lnx25", "topic": "linux", "kind": "concept", "diff": "med", "title": "Bash arithmetic", "statement": "Output prediction.", "prompt": "What does <code class=\"mono\">echo $((7 / 2))</code> print in bash?", "options": ["3.5", "3", "4", "3,5"], "answer": 1, "explain": "$(( )) does INTEGER arithmetic in bash, so 7/2 truncates to 3 (no rounding, toward zero). For decimals you'd use bc or awk. Related: $((7 % 2)) is 1 (remainder).", "playbook": {"intuition": "$(( )) is integer math \u2014 division truncates. Use bc/awk for floats.", "slips": "Expecting 3.5 \u2014 bash arithmetic has no floating point."}},
+{"id": "lnx26", "topic": "linux", "kind": "concept", "diff": "easy", "title": "Hidden files", "statement": "Dotfiles.", "prompt": "In Linux, a file is 'hidden' from a normal <code class=\"mono\">ls</code> when its name:", "options": ["Ends in .tmp", "Begins with a dot (.)", "Is owned by root", "Is empty"], "answer": 1, "explain": "Names beginning with '.' (like .bashrc, .git) are hidden by convention; ls -a reveals them. It's purely a naming convention, not a permission \u2014 there's no separate 'hidden' attribute.", "playbook": {"intuition": "Leading dot = hidden by convention. ls -a shows them.", "slips": "Thinking 'hidden' is a permission bit \u2014 it's just the leading-dot naming rule."}},
+{"id": "lnx27", "topic": "linux", "kind": "concept", "diff": "easy", "title": "tar extract", "statement": "Archive flags.", "prompt": "<code class=\"mono\">tar -xzvf backup.tar.gz</code> \u2014 what do the flags do?", "options": ["create, zip, verbose, file", "extract, gzip, verbose, file", "execute, zip, view, force", "extract, xz, verbose, file"], "answer": 1, "explain": "x=extract, z=gzip (de)compress, v=verbose (list files), f=archive filename (must come right before the name). To CREATE the same archive you'd swap x for c: tar -czvf backup.tar.gz dir/.", "playbook": {"intuition": "c=create / x=extract, z=gzip, v=verbose, f=file. f is always last, before the filename.", "slips": "Putting f in the wrong spot, or using x when you meant c (or vice versa)."}},
+{"id": "lnx28", "topic": "linux", "kind": "concept", "diff": "med", "title": "df vs du", "statement": "Disk usage.", "prompt": "You want the total size of the current directory tree. Which command?", "options": ["df -h .", "du -sh .", "ls -l .", "free -h"], "answer": 1, "explain": "du -sh . sums the disk usage of the directory (s=summary total, h=human-readable). df -h reports free/used space per MOUNTED FILESYSTEM, not per directory. free -h is for RAM.", "playbook": {"intuition": "du = directory/file usage; df = filesystem free space; free = memory.", "slips": "Reaching for df when you want a directory's size \u2014 that's du -sh."}}
+];
+const PROB = Object.fromEntries(PROBLEMS.map(p => [p.id, p]));
+function problemsByTopic(t){ return PROBLEMS.filter(p => p.topic === t); }
+
+/* ============================== PROFILE ============================== */
+function defaultProfile(){
+  const topics = {};
+  TOPICS.forEach(t => topics[t.id] = { attempts:0, solved:0, scoreSum:0, tagCounts:{} });
+  // seed documented baseline slips so Weak Points isn't empty on first load
+  const seed = (tid, tag, n) => { topics[tid].tagCounts[tag] = (topics[tid].tagCounts[tag]||0) + n; };
+  seed('dsa-linear','syntax:map-access',2);
+  seed('dsa-linear','syntax:iter-deref',2);
+  seed('dsa-linear','syntax:top-pop',2);
+  seed('dsa-adv','logic:off-by-one',2);
+  seed('dsa-adv','logic:overflow',2);
+  seed('ec-mem','syntax:nullptr',2);
+  seed('dsa-tg','edge:null',1);
+  return { topics, evalLog:[], solved:{}, seeded:true, createdAt: Date.now() };
+}
+let profile = (() => {
+  try { const raw = store.get(PKEY); if(raw){ const p = JSON.parse(raw); if(p && p.topics) return p; } } catch(e){}
+  const p = defaultProfile(); store.set(PKEY, JSON.stringify(p)); return p;
+})();
+function saveProfile(){ store.set(PKEY, JSON.stringify(profile)); refreshSidebar(); }
+
+let settings = (() => {
+  try { const raw = store.get(SKEY); if(raw) return JSON.parse(raw); } catch(e){}
+  return { judge0:false, dayIndex:0 };
+})();
+function saveSettings(){ store.set(SKEY, JSON.stringify(settings)); }
+
+/* ============================== LEVELS ============================== */
+const LEVELS = ['Untested','Novice','Developing','Competent','Proficient','Strong','Mastered'];
+const LEVEL_COLOR = { Untested:'var(--dim)', Novice:'#f87171', Developing:'#fb923c', Competent:'#fbbf24', Proficient:'#a3e635', Strong:'#34d399', Mastered:'var(--cyan)' };
+function topicStats(tid){
+  const t = profile.topics[tid] || { attempts:0, solved:0, scoreSum:0, tagCounts:{} };
+  const total = problemsByTopic(tid).length || 1;
+  const avg = t.attempts ? t.scoreSum / t.attempts : 0;
+  const slips = Object.values(t.tagCounts).reduce((a,b)=>a+b,0);
+  const slipRate = t.attempts ? slips / t.attempts : (slips>0 ? 1.2 : 0);
+  const solvedRatio = t.solved / total;
+  return { ...t, total, avg, slips, slipRate, solvedRatio };
+}
+function levelOf(tid){
+  const s = topicStats(tid);
+  if(s.attempts === 0) return s.slips>0 ? 'Novice' : 'Untested';
+  // blend: average score (0-100), coverage, penalised by slip rate
+  let score = s.avg * 0.6 + s.solvedRatio * 100 * 0.4;
+  score -= Math.min(35, s.slipRate * 18);
+  score = Math.max(0, Math.min(100, score));
+  // map 0..100 -> Novice..Mastered (indices 1..6)
+  const idx = 1 + Math.min(5, Math.floor(score / (100/6)));
+  return LEVELS[idx];
+}
+function levelPct(tid){
+  const i = LEVELS.indexOf(levelOf(tid));
+  return Math.round((i/6)*100);
+}
+
+/* ============================== RECORDING ============================== */
+function recordEval(p, result){
+  const t = profile.topics[p.topic];
+  t.attempts += 1;
+  t.scoreSum += result.score;
+  (result.tags||[]).forEach(tag => {
+    if(TAGS.includes(tag)) t.tagCounts[tag] = (t.tagCounts[tag]||0) + 1;
+  });
+  const passed = result.score >= 80;
+  if(passed && !profile.solved[p.id]){ profile.solved[p.id] = true; t.solved += 1; }
+  profile.evalLog.push({ ts: Date.now(), pid: p.id, topic: p.topic, score: result.score, verdict: result.verdict, tags: result.tags||[] });
+  saveProfile();
+}
+
+/* ============================== JUDGE (API) ============================== */
+async function callJudge(payload){
+  const r = await fetch('/api/judge', {
+    method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(payload)
+  });
+  if(!r.ok){ const txt = await r.text().catch(()=> ''); throw new Error('judge '+r.status+' '+txt.slice(0,120)); }
+  return r.json();
+}
+async function callRun(source, stdin){
+  const r = await fetch('/api/run', {
+    method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ source, stdin })
+  });
+  if(!r.ok) throw new Error('run '+r.status);
+  return r.json();
+}
+
+/* ============================== UI: NAV ============================== */
+function show(view){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('show'));
+  const el = document.getElementById('view-'+view);
+  if(el) el.classList.add('show');
+  document.querySelectorAll('.nav').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+  if(view==='weak') renderWeak();
+  if(view==='trends') renderTrends();
+  if(view==='today') renderToday();
+  if(view==='bank') renderBank();
+  if(view==='settings') renderSettings();
+}
+document.querySelectorAll('.nav').forEach(n => n.addEventListener('click', () => show(n.dataset.view)));
+
+function refreshSidebar(){
+  const d = settings.dayIndex+1;
+  document.getElementById('streakInfo').textContent = 'Day '+d+' of 12';
+  document.getElementById('solvedInfo').textContent = Object.keys(profile.solved).length + ' solved';
+}
+
+/* ============================== UI: TODAY ============================== */
+function paceVerdict(){
+  // adaptive pacing from recent scores
+  const recent = profile.evalLog.slice(-5);
+  if(recent.length < 2) return { txt:'pace · calibrating', cls:'am' };
+  const avg = recent.reduce((a,b)=>a+b.score,0)/recent.length;
+  if(avg >= 80) return { txt:'pace · accelerate ↑', cls:'ok' };
+  if(avg >= 55) return { txt:'pace · steady →', cls:'am' };
+  return { txt:'pace · slow down, revise ↓', cls:'bad' };
+}
+function pItemHTML(p){
+  const done = profile.solved[p.id] ? 'done' : '';
+  return `<div class="pitem" data-pid="${p.id}">
+    <span class="dot ${done}"></span>
+    <div class="pt"><b>${p.title}</b><div class="meta">${TOPIC[p.topic].name}</div></div>
+    <span class="kind">${p.kind}</span>
+    <span class="diff ${p.diff}">${p.diff}</span>
+  </div>`;
+}
+function wireList(container){
+  container.querySelectorAll('.pitem').forEach(it => it.addEventListener('click', () => openProblem(it.dataset.pid)));
+}
+function renderToday(){
+  const day = CURRICULUM[settings.dayIndex];
+  document.getElementById('dayTitle').textContent = 'Day '+day.day+' — '+day.title;
+  document.getElementById('dayFocus').textContent = 'Focus: '+TOPIC[day.focus].name + (day.revise.length ? '  ·  revising '+day.revise.map(r=>TOPIC[r].cat+'/'+r.split('-').pop()).join(', ') : '');
+  const pace = paceVerdict();
+  const pt = document.getElementById('paceTag'); pt.textContent = pace.txt; pt.className = 'tag '+pace.cls;
+  const today = problemsByTopic(day.focus);
+  const revise = day.revise.flatMap(r => problemsByTopic(r)).filter((p,i,a)=>a.indexOf(p)===i);
+  const tl = document.getElementById('todayList');
+  tl.innerHTML = today.length ? today.map(pItemHTML).join('') : '<div class="muted small">No problems seeded for this topic yet.</div>';
+  wireList(tl);
+  const rl = document.getElementById('reviseList');
+  rl.innerHTML = revise.length ? revise.map(pItemHTML).join('') : '<div class="muted small">Nothing to revise today.</div>';
+  wireList(rl);
+}
+document.getElementById('prevDay').onclick = () => { settings.dayIndex = Math.max(0, settings.dayIndex-1); saveSettings(); renderToday(); refreshSidebar(); };
+document.getElementById('nextDay').onclick = () => { settings.dayIndex = Math.min(11, settings.dayIndex+1); saveSettings(); renderToday(); refreshSidebar(); };
+
+/* ============================== UI: BANK ============================== */
+let bankFilter = 'all';
+function renderBank(){
+  const cats = ['all', ...new Set(TOPICS.map(t=>t.cat))];
+  const ff = document.getElementById('bankFilters');
+  ff.innerHTML = cats.map(c => `<button class="btn sm ${c===bankFilter?'cyan':'ghost'}" data-cat="${c}">${c==='all'?'All':c}</button>`).join('');
+  ff.querySelectorAll('button').forEach(b => b.onclick = () => { bankFilter = b.dataset.cat; renderBank(); });
+  const list = PROBLEMS.filter(p => bankFilter==='all' || TOPIC[p.topic].cat===bankFilter);
+  const bl = document.getElementById('bankList');
+  bl.innerHTML = list.map(pItemHTML).join('');
+  wireList(bl);
+}
+
+/* ============================== UI: PROBLEM ============================== */
+let editor = null;
+let currentProblem = null;
+let selectedOption = null;
+
+function buildEditor(starter){
+  const wrap = document.getElementById('editorWrap');
+  wrap.innerHTML = '<textarea id="cmArea"></textarea>';
+  editor = CodeMirror.fromTextArea(document.getElementById('cmArea'), {
+    mode:'text/x-c++src', lineNumbers:true, indentUnit:4, tabSize:4,
+    matchBrackets:true, autoCloseBrackets:true, theme:'default'
+  });
+  editor.setValue(starter || '');
+  setTimeout(()=>editor.refresh(), 30);
+}
+function openProblem(pid){
+  const p = PROB[pid]; if(!p) return;
+  currentProblem = p; selectedOption = null;
+  document.getElementById('pDiff').textContent = p.diff;
+  document.getElementById('pDiff').className = 'diff '+p.diff;
+  document.getElementById('pKind').textContent = p.kind;
+  document.getElementById('pTopic').textContent = TOPIC[p.topic].name;
+  document.getElementById('pSig').textContent = p.sig || p.title;
+  document.getElementById('resultArea').innerHTML = '';
+  document.getElementById('playbook').classList.remove('open');
+  // description
+  let html = `<h3>${p.title}</h3><div class="muted small">${p.statement}</div><p>${p.prompt}</p>`;
+  if(p.examples){
+    p.examples.forEach((e,i)=>{
+      html += `<div class="ex"><span class="k">Input:</span> ${e.in}<br><span class="k">Output:</span> ${e.out}` + (e.ex?`<br><span class="k">Explanation:</span> ${e.ex}`:'') + `</div>`;
+    });
+  }
+  if(p.constraints){
+    html += `<div class="constraints"><div class="muted small mono" style="margin-top:12px">Constraints</div><ul>` + p.constraints.map(c=>`<li><code>${c}</code></li>`).join('') + `</ul></div>`;
+  }
+  document.getElementById('pDesc').innerHTML = html;
+  // solver mode
+  const isCode = p.kind === 'code';
+  document.getElementById('editorWrap').style.display = isCode ? 'block':'none';
+  document.getElementById('conceptWrap').style.display = isCode ? 'none':'block';
+  document.getElementById('resetCode').style.display = isCode ? 'inline-flex':'none';
+  document.getElementById('runNote').textContent = isCode ? (settings.judge0 ? 'Run = g++ (Judge0)' : 'Run = model-traced') : 'Run = check answer';
+  if(isCode){ buildEditor(p.starter); }
+  else {
+    const ol = document.getElementById('optList');
+    ol.innerHTML = p.options.map((o,i)=>`<div class="opt" data-i="${i}"><span class="letter">${String.fromCharCode(65+i)}</span><span class="txt">${o}</span></div>`).join('');
+    ol.querySelectorAll('.opt').forEach(op => op.onclick = () => {
+      ol.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
+      op.classList.add('sel'); selectedOption = parseInt(op.dataset.i,10);
+    });
+  }
+  // playbook
+  const pb = p.playbook || {};
+  document.getElementById('pbBody').innerHTML =
+    (pb.intuition?`<h4>Intuition</h4><p>${pb.intuition}</p>`:'') +
+    (pb.template?`<h4>Template</h4><div class="ex mono">${escapeHTML(pb.template).replace(/\n/g,'<br>')}</div>`:'') +
+    (pb.slips?`<h4>Watch your slips</h4><p>${pb.slips}</p>`:'');
+  show('problem');
+  document.querySelectorAll('.nav').forEach(n=>n.classList.remove('active'));
+}
+function escapeHTML(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+document.getElementById('backBtn').onclick = () => show('today');
+document.getElementById('resetCode').onclick = () => { if(editor && currentProblem) editor.setValue(currentProblem.starter); };
+document.getElementById('pbToggle').onclick = () => document.getElementById('playbook').classList.toggle('open');
+
+/* ---- RUN ---- */
+document.getElementById('runBtn').onclick = runProblem;
+async function runProblem(){
+  const p = currentProblem; if(!p) return;
+  const area = document.getElementById('resultArea');
+  if(p.kind === 'concept'){
+    if(selectedOption === null){ toast('Pick an option first'); return; }
+    const ok = selectedOption === p.answer;
+    document.querySelectorAll('#optList .opt').forEach((op,i)=>{
+      op.classList.remove('sel');
+      if(i===p.answer) op.classList.add('correct');
+      if(i===selectedOption && !ok) op.classList.add('wrong');
+    });
+    area.innerHTML = `<div class="verdict ${ok?'good':'bad'}"><div class="vt">${ok?'✓ Correct':'✗ Not quite'}</div><div class="hint">${ok?'Run is a quick self-check and is not logged. Use ⌕ Evaluate to record it.':'Re-read the prompt and try again, then Evaluate to log a diagnosis.'}</div></div>`;
+    return;
+  }
+  // code: run tests
+  setBusy('runBtn', true);
+  area.innerHTML = `<div class="muted small"><span class="spinner"></span> Running ${p.tests.length} cases…</div>`;
+  try {
+    let results;
+    if(settings.judge0 && p.harness){
+      results = await runJudge0(p);
+    } else {
+      const res = await callJudge({ mode:'run', problem: serializeProblem(p), code: editor.getValue() });
+      results = res.results || [];
+      if(res.compileError){ area.innerHTML = `<div class="verdict bad"><div class="vt">Compile error</div><div class="hint mono">${escapeHTML(res.compileError)}</div></div>`; setBusy('runBtn',false); return; }
+    }
+    renderTestGrid(area, results);
+  } catch(e){
+    area.innerHTML = `<div class="verdict bad"><div class="vt">Run failed</div><div class="hint">${escapeHTML(e.message)}<br><span class="muted small">Is /api/judge deployed with ANTHROPIC_API_KEY set?</span></div></div>`;
+  }
+  setBusy('runBtn', false);
+}
+function renderTestGrid(area, results){
+  const pass = results.filter(r=>r.pass).length;
+  const cls = pass===results.length ? 'ok' : (pass>0?'am':'bad');
+  let html = `<div class="results"><div class="row" style="justify-content:space-between;margin-bottom:8px"><b>${pass}/${results.length} passed</b><span class="tag ${cls}">not logged</span></div><div class="tgrid">`;
+  results.forEach((r,i)=>{
+    html += `<div class="tcase ${r.pass?'pass':'fail'}"><div class="st">${r.pass?'✓':'✗'}</div><div>
+      <div class="ln"><b>case ${i+1}</b> ${r.input?escapeHTML(r.input):''}</div>
+      ${r.pass?'':`<div class="ln got bad">got: <b>${escapeHTML(String(r.got??'—'))}</b></div><div class="ln">expected: <b>${escapeHTML(String(r.expected??''))}</b></div>`}
+    </div></div>`;
+  });
+  html += '</div></div>';
+  area.innerHTML = html;
+}
+
+/* ---- EVALUATE ---- */
+document.getElementById('evalBtn').onclick = evaluateProblem;
+async function evaluateProblem(){
+  const p = currentProblem; if(!p) return;
+  const area = document.getElementById('resultArea');
+  if(p.kind === 'concept'){
+    if(selectedOption === null){ toast('Pick an option first'); return; }
+    const ok = selectedOption === p.answer;
+    document.querySelectorAll('#optList .opt').forEach((op,i)=>{ op.classList.remove('sel'); if(i===p.answer) op.classList.add('correct'); if(i===selectedOption&&!ok) op.classList.add('wrong'); });
+    const result = { verdict: ok?'Correct':'Incorrect', score: ok?100:25, tags: ok?[]:['concept:misunderstood'], hint: p.explain };
+    recordEval(p, result);
+    renderVerdict(area, result, ok?'good':'bad');
+    return;
+  }
+  setBusy('evalBtn', true);
+  area.innerHTML = `<div class="muted small"><span class="spinner"></span> Judge is analyzing logic, edges, and your recurring slips…</div>`;
+  try {
+    const res = await callJudge({ mode:'evaluate', problem: serializeProblem(p), code: editor.getValue() });
+    const result = {
+      verdict: res.verdict || 'Reviewed',
+      score: typeof res.score==='number' ? res.score : 50,
+      tags: (res.tags||[]).filter(t=>TAGS.includes(t)),
+      hint: res.hint || res.analysis || 'No hint returned.'
+    };
+    recordEval(p, result);
+    const cls = result.score>=80?'good':(result.score>=50?'partial':'bad');
+    renderVerdict(area, result, cls);
+  } catch(e){
+    area.innerHTML = `<div class="verdict bad"><div class="vt">Evaluate failed</div><div class="hint">${escapeHTML(e.message)}<br><span class="muted small">Check /api/judge + ANTHROPIC_API_KEY.</span></div></div>`;
+  }
+  setBusy('evalBtn', false);
+}
+function renderVerdict(area, r, cls){
+  const tags = (r.tags||[]).map(t=>`<span class="tag bad">${t}</span>`).join('') || '<span class="tag ok">no slips flagged</span>';
+  area.innerHTML = `<div class="verdict ${cls}">
+    <div class="vt">${cls==='good'?'✓':cls==='partial'?'◐':'✗'} ${escapeHTML(r.verdict)} · ${r.score}/100</div>
+    <div class="hint">${escapeHTML(r.hint)}</div>
+    <div class="tags">${tags}</div>
+    <div class="muted small mono" style="margin-top:8px">logged to weakness profile</div>
+  </div>`;
+}
+
+function serializeProblem(p){
+  return { id:p.id, title:p.title, topic:p.topic, topicName:TOPIC[p.topic].name, sig:p.sig||'',
+    prompt: p.prompt.replace(/<[^>]+>/g,''), constraints:p.constraints||[],
+    tests:p.tests||[], playbookSlips: p.playbook?p.playbook.slips:'' };
+}
+async function runJudge0(p){
+  const full = p.harness.replace('/*__SOLUTION__*/', editor.getValue());
+  const results = [];
+  for(const t of p.tests){
+    const r = await callRun(full, t.stdin||'');
+    const got = (r.stdout||'').trim();
+    results.push({ input:t.in, got, expected:t.out, pass: got === String(t.out).trim() });
+  }
+  return results;
+}
+function setBusy(id, b){ const el = document.getElementById(id); if(el) el.disabled = b; }
+
+/* ============================== UI: WEAK ============================== */
+function renderWeak(){
+  // top weaknesses: rank topics by (low level + high slip rate)
+  const ranked = TOPICS.map(t=>{
+    const s = topicStats(t.id);
+    const lvlIdx = LEVELS.indexOf(levelOf(t.id));
+    const weakness = (s.slips * 1.5) + (6 - lvlIdx) * 2 + (s.attempts? (100-s.avg)/25 : 1);
+    return { t, s, lvl: levelOf(t.id), weakness };
+  }).sort((a,b)=>b.weakness-a.weakness).slice(0,6);
+  const tw = document.getElementById('topWeak');
+  tw.innerHTML = `<tr><th>Topic</th><th>Level</th><th>Top slip</th><th style="text-align:right">Slips</th></tr>` +
+    ranked.map(r=>{
+      const topSlip = Object.entries(r.s.tagCounts).sort((a,b)=>b[1]-a[1])[0];
+      return `<tr><td>${r.t.name}</td><td><span class="lvlname" style="color:${LEVEL_COLOR[r.lvl]};border-color:${LEVEL_COLOR[r.lvl]}">${r.lvl}</span></td><td class="mono small muted">${topSlip?topSlip[0]:'—'}</td><td class="n">${r.s.slips}</td></tr>`;
+    }).join('');
+  // level grid
+  const grid = document.getElementById('levelGrid');
+  grid.innerHTML = TOPICS.map(t=>{
+    const lvl = levelOf(t.id), pct = levelPct(t.id), s = topicStats(t.id);
+    const slips = Object.entries(s.tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,4)
+      .map(([tag,n])=>`<span class="tag bad">${tag} ·${n}</span>`).join('');
+    return `<div class="lvl">
+      <div class="lh"><b>${t.name}</b><span class="lvlname" style="color:${LEVEL_COLOR[lvl]};border-color:${LEVEL_COLOR[lvl]}">${lvl}</span></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="muted small mono" style="margin-top:7px">${s.solved}/${s.total} solved · ${s.attempts} eval${s.attempts===1?'':'s'} · avg ${Math.round(s.avg)}</div>
+      <div class="slips">${slips||'<span class="empty">no slips logged</span>'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================== UI: TRENDS ============================== */
+function renderTrends(){
+  const log = profile.evalLog;
+  const svg = document.getElementById('spark');
+  if(log.length < 2){
+    svg.innerHTML = `<text x="300" y="60" fill="#5b6479" font-size="13" text-anchor="middle" font-family="JetBrains Mono">Evaluate a few problems to see your curve</text>`;
+  } else {
+    const n = log.length, W=600, H=120, pad=8;
+    const pts = log.map((e,i)=>{
+      const x = pad + (W-2*pad) * (n===1?0.5:i/(n-1));
+      const y = H-pad - (H-2*pad) * (e.score/100);
+      return [x,y];
+    });
+    const path = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    const area = `M${pts[0][0]} ${H} `+pts.map(p=>'L'+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+` L${pts[n-1][0]} ${H} Z`;
+    svg.innerHTML = `
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(34,211,238,.35)"/><stop offset="1" stop-color="rgba(34,211,238,0)"/></linearGradient></defs>
+      <line x1="0" y1="${H-pad-(H-2*pad)*0.8}" x2="${W}" y2="${H-pad-(H-2*pad)*0.8}" stroke="#222b3d" stroke-dasharray="3 4"/>
+      <path d="${area}" fill="url(#g)"/>
+      <path d="${path}" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round"/>
+      ${pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.5" fill="var(--violet)"/>`).join('')}`;
+  }
+  // slip rate early vs recent per category
+  const cats = [...new Set(TOPICS.map(t=>t.cat))];
+  const half = Math.max(1, Math.floor(log.length/2));
+  const early = log.slice(0, half), recent = log.slice(-half);
+  function rate(arr, cat){
+    const sub = arr.filter(e=>TOPIC[e.topic] && TOPIC[e.topic].cat===cat);
+    if(!sub.length) return null;
+    const slips = sub.reduce((a,e)=>a+(e.tags?e.tags.length:0),0);
+    return slips/sub.length;
+  }
+  const el = document.getElementById('slipTrends');
+  if(log.length < 4){
+    el.innerHTML = `<div class="muted small">Need more evaluations to compare early vs recent slip rates.</div>`;
+  } else {
+    el.innerHTML = cats.map(c=>{
+      const e = rate(early,c), r = rate(recent,c);
+      if(e===null && r===null) return '';
+      let arrow='→', cls='flat', label='flat';
+      if(e!==null && r!==null){
+        if(r < e-0.05){ arrow='↓'; cls='down'; label='improving'; }
+        else if(r > e+0.05){ arrow='↑'; cls='up'; label='rising'; }
+      }
+      return `<div class="trendrow"><span>${c}</span><span class="muted small mono">${e!==null?e.toFixed(2):'—'} → ${r!==null?r.toFixed(2):'—'} slips/eval</span><span class="arrow ${cls}">${arrow} ${label}</span></div>`;
+    }).join('') || '<div class="muted small">No category data yet.</div>';
+  }
+}
+
+/* ============================== DRILL ============================== */
+document.getElementById('drillBtn').onclick = drill;
+function drill(){
+  // weakest topic by level then slip count, that has an UNSOLVED problem
+  const ranked = TOPICS.map(t=>({ id:t.id, lvl:LEVELS.indexOf(levelOf(t.id)), slips:topicStats(t.id).slips }))
+    .sort((a,b)=> a.lvl-b.lvl || b.slips-a.slips);
+  for(const r of ranked){
+    const unsolved = problemsByTopic(r.id).find(p=>!profile.solved[p.id]);
+    if(unsolved){ toast('Drilling weakest: '+TOPIC[r.id].cat); openProblem(unsolved.id); return; }
+  }
+  toast('All seeded problems solved — add more to the bank');
+}
+
+/* ============================== SETTINGS ============================== */
+function renderSettings(){
+  document.getElementById('judge0Switch').classList.toggle('on', !!settings.judge0);
+  document.getElementById('diag').textContent =
+    `profile created ${new Date(profile.createdAt).toLocaleString()} · ${profile.evalLog.length} evals logged · storage ${store.get('__probe')!==undefined?'ok':'ok'}`;
+}
+document.getElementById('judge0Switch').onclick = () => { settings.judge0 = !settings.judge0; saveSettings(); renderSettings(); toast(settings.judge0?'Judge0 on — Run uses g++':'Judge0 off — Run model-traced'); };
+document.getElementById('exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(profile,null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'mwforge-profile-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  toast('Exported profile JSON');
+};
+document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+document.getElementById('importFile').onchange = (e) => {
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { try { const p = JSON.parse(rd.result); if(p && p.topics){ profile = p; saveProfile(); toast('Profile imported'); renderWeak(); } else toast('Invalid profile file'); } catch(err){ toast('Could not parse JSON'); } };
+  rd.readAsText(f);
+};
+document.getElementById('resetProfile').onclick = () => {
+  if(confirm('Reset weakness profile to baseline? Export first if you want a backup.')){
+    profile = defaultProfile(); saveProfile(); toast('Profile reset to baseline'); renderSettings(); renderWeak();
+  }
+};
+
+/* ============================== TOAST ============================== */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ============================== INIT ============================== */
+refreshSidebar();
+renderToday();
+</script>
+</body>
+</html>
